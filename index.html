@@ -275,13 +275,13 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
-                        <!-- PROPIETARIO CON DATALIST NATIVO INFALIBLE -->
+                        <!-- PROPIETARIO CON DATALIST INFALIBLE Y AUTOCOMPLETADO AUTOMÁTICO -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
                                 <div class="form-group">
                                     <label>🔍 Buscar Existente:</label>
-                                    <input type="text" id="input_buscar_prop" list="datalist_clientes_prop" placeholder="Escribir para buscar..." onchange="seleccionarClienteDatalist('prop')" style="font-weight:600; color:var(--brand-blue);">
+                                    <input type="text" id="input_buscar_prop" list="datalist_clientes_prop" placeholder="Escribir para buscar..." oninput="seleccionarClienteDatalist('prop')" onchange="seleccionarClienteDatalist('prop')" style="font-weight:600; color:var(--brand-blue);">
                                     <datalist id="datalist_clientes_prop"></datalist>
                                 </div>
                                 <input type="hidden" id="id_prop_seleccionado">
@@ -315,7 +315,7 @@
                             </div>
                         </div>
 
-                        <!-- CONTRAPARTE CON DATALIST NATIVO INFALIBLE -->
+                        <!-- CONTRAPARTE CON DATALIST INFALIBLE Y AUTOCOMPLETADO AUTOMÁTICO -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
@@ -330,7 +330,7 @@
                                     </div>
                                     <div class="form-group" style="flex:1.2;">
                                         <label>🔍 Buscar Existente:</label>
-                                        <input type="text" id="input_buscar_comp" list="datalist_clientes_comp" placeholder="Escribir para buscar..." onchange="seleccionarClienteDatalist('comp')" style="font-weight:600; color:var(--brand-blue);">
+                                        <input type="text" id="input_buscar_comp" list="datalist_clientes_comp" placeholder="Escribir para buscar..." oninput="seleccionarClienteDatalist('comp')" onchange="seleccionarClienteDatalist('comp')" style="font-weight:600; color:var(--brand-blue);">
                                         <datalist id="datalist_clientes_comp"></datalist>
                                     </div>
                                 </div>
@@ -832,7 +832,7 @@
             });
         }
 
-        // AUTOCOMPLETADO NATIVO INFALIBLE CON DATALIST
+        // CARGA DE DATALIST Y AUTOCOMPLETADO DEFINITIVO DE CAMPOS
         async function cargarComboClientes() {
             const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
             listaClientesGlobal = data || [];
@@ -844,33 +844,36 @@
 
             listaClientesGlobal.forEach(c => {
                 let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
-                let labelText = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
+                let labelText = `${display} ${c.cuit_dni ? '[' + c.cuit_dni + ']' : ''}`;
 
                 const opt1 = document.createElement('option');
                 opt1.value = labelText;
-                opt1.dataset.id = c.id_cliente;
                 dlProp.appendChild(opt1);
 
                 const opt2 = document.createElement('option');
                 opt2.value = labelText;
-                opt2.dataset.id = c.id_cliente;
                 dlComp.appendChild(opt2);
             });
         }
 
         function seleccionarClienteDatalist(tipo) {
             const prefix = tipo === 'prop' ? '_prop' : '_comp';
-            const valInput = document.getElementById(`input_buscar_${prefix}`).value.trim();
+            const valInput = document.getElementById(`input_buscar_${prefix}`).value.trim().toLowerCase();
 
+            if (!valInput) return;
+
+            // Buscar coincidencia en la memoria global de clientes
             const c = listaClientesGlobal.find(item => {
                 let display = item.razon_social ? item.razon_social : (item.apellido ? `${item.apellido}, ${item.nombre || ''}` : item.nombre_razon_social);
-                let labelText = `${display} ${item.cuit_dni ? '(' + item.cuit_dni + ')' : ''}`;
-                return labelText === valInput || display === valInput;
+                let labelText = `${display} ${item.cuit_dni ? '[' + item.cuit_dni + ']' : ''}`;
+                return labelText.toLowerCase() === valInput || display.toLowerCase() === valInput || (item.cuit_dni && item.cuit_dni.toLowerCase() === valInput);
             });
 
             if (c) {
+                // 1. Asignar ID
                 document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
 
+                // 2. Determinar Tipo de Persona (Física vs Jurídica)
                 const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
                 const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
                 const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
@@ -883,7 +886,7 @@
                     toggleTipoPersona(prefix, 'fisica'); 
                 }
 
-                // COMPLETA TODOS LOS CAMPOS VISIBLES E INVISIBLES
+                // 3. AUTOCOMPLETADO FORZADO DE TODOS LOS CAMPOS
                 document.getElementById('nombre' + prefix).value = c.nombre || '';
                 document.getElementById('apellido' + prefix).value = c.apellido || '';
                 document.getElementById('razon_social' + prefix).value = c.razon_social || '';
@@ -892,8 +895,6 @@
                 document.getElementById('mail' + prefix).value = c.mail || '';
                 document.getElementById('direccion' + prefix).value = c.direccion || '';
                 document.getElementById('provincia' + prefix).value = c.provincia || '';
-            } else {
-                document.getElementById('id' + prefix + '_seleccionado').value = '';
             }
         }
 
