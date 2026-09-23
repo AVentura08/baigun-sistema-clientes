@@ -65,7 +65,6 @@
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
-        /* LISTA FLOTANTE DE RESULTADOS */
         .autocomplete-box { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: white; border: 2px solid var(--brand-blue); border-radius: 0 0 5px 5px; max-height: 150px; overflow-y: auto; box-shadow: 0 6px 12px rgba(0,0,0,0.2); display: none; }
         .autocomplete-row { padding: 6px 8px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #e2e8f0; color: var(--text-dark); background: white; }
         .autocomplete-row:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 700; }
@@ -280,7 +279,7 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
-                        <!-- PROPIETARIO CON AUTOCOMPLETADO FLOTANTE DEFINITIVO -->
+                        <!-- PROPIETARIO CON BÚSQUEDA INSTANTÁNEA -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
@@ -320,7 +319,7 @@
                             </div>
                         </div>
 
-                        <!-- CONTRAPARTE CON AUTOCOMPLETADO FLOTANTE DEFINITIVO -->
+                        <!-- CONTRAPARTE CON BÚSQUEDA INSTANTÁNEA -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
@@ -842,13 +841,15 @@
             listaClientesGlobal = data || [];
         }
 
-        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO DEFINITIVA (Manejo de Objeto Directo)
+        // LÓGICA DE BÚSQUEDA Y AUTO-COMPLETADO EN TIEMPO REAL (SIN TECLA ENTER)
         function filtrarListaFlotante(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const box = document.getElementById(`box_results_${tipo}`);
             box.innerHTML = '';
 
+            // Si el cuadro está vacío, limpiar la ficha y ocultar desplegable
             if (query.length === 0) {
+                limpiarFichaCliente(tipo);
                 box.style.display = 'none';
                 return;
             }
@@ -859,7 +860,13 @@
                 return nom.includes(query) || cuit.includes(query);
             });
 
+            // Si hay exactamente 1 coincidencia mientras escribe, se auto-completa solo inmediatamente
+            if (coincidencia.length === 1 && query.length >= 3) {
+                ejecutarAutocompletadoDirecto(tipo, coincidencia[0]);
+            }
+
             if (coincidencia.length === 0) {
+                limpiarFichaCliente(tipo);
                 box.innerHTML = `<div class="autocomplete-row" style="color:#64748b; cursor:default;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
                 box.style.display = 'block';
                 return;
@@ -871,7 +878,7 @@
                 let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
                 row.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
                 
-                // EVENTO MOUSEDOWN PARA EJECUCIÓN INMEDIATA SIN PERDER FOCO
+                // EVENTO MOUSEDOWN PARA CARGAR AL HACER CLIC DIRECTO CON EL RATÓN
                 row.addEventListener('mousedown', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -888,14 +895,14 @@
         function ejecutarAutocompletadoDirecto(tipo, c) {
             const prefix = tipo === 'prop' ? '_prop' : '_comp';
             
-            // 1. Asignar ID
+            // 1. Asignar ID Interno
             document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
 
-            // 2. Colocar Nombre en el cuadro de búsqueda
+            // 2. Colocar Nombre en el buscador
             let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
             document.getElementById(`input_buscar_${prefix}`).value = display;
 
-            // 3. Seleccionar tipo de persona
+            // 3. Seleccionar radio button de Persona Física o Jurídica
             const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
             const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
             const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
@@ -908,7 +915,7 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
-            // 4. INYECCIÓN FORZADA EN LOS CAMPOS VISIBLES
+            // 4. ESCRIBIR Y AUTOCOMPLETAR LOS DATOS DE ABAJO VISIBLEMENTE
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
             document.getElementById('razon_social' + prefix).value = c.razon_social || '';
@@ -917,6 +924,19 @@
             document.getElementById('mail' + prefix).value = c.mail || '';
             document.getElementById('direccion' + prefix).value = c.direccion || '';
             document.getElementById('provincia' + prefix).value = c.provincia || '';
+        }
+
+        function limpiarFichaCliente(tipo) {
+            const prefix = tipo === 'prop' ? '_prop' : '_comp';
+            document.getElementById('id' + prefix + '_seleccionado').value = '';
+            document.getElementById('nombre' + prefix).value = '';
+            document.getElementById('apellido' + prefix).value = '';
+            document.getElementById('razon_social' + prefix).value = '';
+            document.getElementById('cuit' + prefix).value = '';
+            document.getElementById('contacto' + prefix).value = '';
+            document.getElementById('mail' + prefix).value = '';
+            document.getElementById('direccion' + prefix).value = '';
+            document.getElementById('provincia' + prefix).value = '';
         }
 
         // Cierra los desplegables flotantes al tocar en cualquier otra parte
