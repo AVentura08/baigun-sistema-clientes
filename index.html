@@ -116,13 +116,13 @@
         .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
         .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; position: relative; }
         
-        /* POPUP / TOOLTIP EJECUTIVO EN HOVER */
-        .tooltip-card { display: none; position: absolute; bottom: 100%; left: 0; z-index: 1000; width: 220px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); border: 1px solid #3b82f6; font-size: 9px; text-align: left; }
+        /* POPUP FLOTANTE DE CAPA SUPERIOR (Z-INDEX SUPERIOR) */
+        .tooltip-card { display: none; position: absolute; top: 22px; left: 10px; z-index: 999999; width: 230px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #60a5fa; font-size: 9.5px; text-align: left; pointer-events: none; }
         td:hover .tooltip-card { display: block; }
         .tooltip-card h6 { margin: 0 0 4px 0; color: #60a5fa; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #1e3a8a; padding-bottom: 2px; }
-        .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
         .tooltip-label { color: #94a3b8; font-weight: 600; }
-        .tooltip-val { color: #f8fafc; font-weight: 700; text-align: right; }
+        .tooltip-val { color: #ffffff; font-weight: 700; text-align: right; }
 
         .doble-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .chart-box { display: flex; flex-direction: column; align-items: center; }
@@ -388,7 +388,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO CON FICHA POPUP EN HOVER Y EXCEL EXTENDIDO -->
+        <!-- VISTA CEO -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -854,7 +854,7 @@
             listaClientesGlobal = data || [];
         }
 
-        // LÓGICA DE AUTOCOMPLETADO Y FILTRADO FLOTANTE
+        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO EN TIEMPO REAL
         function buscarYFiltrarFlotante(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const box = document.getElementById(`box_results_${tipo}`);
@@ -1050,18 +1050,25 @@
                     conteoSectoresCant[secNombre] = (conteoSectoresCant[secNombre] || 0) + 1;
                     conteoSectoresMonto[secNombre] = (conteoSectoresMonto[secNombre] || 0) + valorNum;
 
-                    // CONSTRUCCIÓN DE MATRIZ Y DETALLES EXTENDIDOS PARA EXCEL
-                    let propDetalleTxt = [];
-                    let compDetalleTxt = [];
+                    // CONSTRUCCIÓN DE COLUMNAS SEPARADAS PARA EXCEL
+                    let propCuit = []; let propTel = []; let propMail = []; let propDir = []; let propProv = [];
+                    let compCuit = []; let compTel = []; let compMail = []; let compDir = []; let compProv = [];
 
                     op.clientesDetalle.forEach(det => {
                         const c = det.cliente || {};
-                        const infoExt = `${det.nombreMostrar} [CUIT/DNI: ${c.cuit_dni || 'S/D'}, Tel: ${c.telefono || 'S/D'}, Mail: ${c.mail || 'S/D'}, Dir: ${c.direccion || 'S/D'}, Prov: ${c.provincia || 'S/D'}]`;
 
                         if (det.rol === 'Propietario') {
-                            propDetalleTxt.push(infoExt);
+                            if (c.cuit_dni) propCuit.push(c.cuit_dni);
+                            if (c.telefono) propTel.push(c.telefono);
+                            if (c.mail) propMail.push(c.mail);
+                            if (c.direccion) propDir.push(c.direccion);
+                            if (c.provincia) propProv.push(c.provincia);
                         } else {
-                            compDetalleTxt.push(infoExt);
+                            if (c.cuit_dni) compCuit.push(c.cuit_dni);
+                            if (c.telefono) compTel.push(c.telefono);
+                            if (c.mail) compMail.push(c.mail);
+                            if (c.direccion) compDir.push(c.direccion);
+                            if (c.provincia) compProv.push(c.provincia);
 
                             const nom = det.nombreMostrar;
                             if (nom && nom !== '-') {
@@ -1104,7 +1111,7 @@
                     `;
                     tbody.appendChild(tr);
 
-                    // REGISTRO EXTENDIDO PARA EXCEL POR LÍNEA
+                    // EXCEL CON TODAS LAS COLUMNAS INDIVIDUALES EN CELDAS SEPARADAS
                     datosExportarCEO.push({
                         "# Operación": op['#'] || '',
                         "Fecha": op['Fecha'] || '',
@@ -1117,10 +1124,18 @@
                         "Productor": op.empData?.productor || '-',
                         "Vendedor / Asesor": op.vendedorVal,
                         "Valor Cierre": op.valorCierreVal || '-',
-                        "Propietario(s) Nombre": op.propText,
-                        "Propietarios Detalle Completo": propDetalleTxt.join(' | ') || '-',
-                        "Comprador(es) Nombre": op.compText,
-                        "Compradores Detalle Completo": compDetalleTxt.join(' | ') || '-',
+                        "Propietarios Nombre": op.propText,
+                        "Propietario CUIT/DNI": propCuit.join(', ') || '-',
+                        "Propietario Teléfono": propTel.join(', ') || '-',
+                        "Propietario Mail": propMail.join(', ') || '-',
+                        "Propietario Dirección": propDir.join(', ') || '-',
+                        "Propietario Provincia": propProv.join(', ') || '-',
+                        "Compradores/Inq. Nombre": op.compText,
+                        "Comprador/Inq. CUIT/DNI": compCuit.join(', ') || '-',
+                        "Comprador/Inq. Teléfono": compTel.join(', ') || '-',
+                        "Comprador/Inq. Mail": compMail.join(', ') || '-',
+                        "Comprador/Inq. Dirección": compDir.join(', ') || '-',
+                        "Comprador/Inq. Provincia": compProv.join(', ') || '-',
                         "Estado Carga": op.estadoCalculado
                     });
                 });
@@ -1139,7 +1154,7 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
-        // RENDERIZADO DE MATRIZ CON TOOLTIP/POPUP AL PASAR EL MOUSE (HOVER)
+        // MATRIZ TOP 10 CON POPUP / TOOLTIP VISIBLE DE CAPA SUPERIOR
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
@@ -1177,11 +1192,11 @@
                     <td style="position:relative;">
                         <a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a>
                         
-                        <!-- FICHA COMPLETA FLOTANTE EN HOVER -->
+                        <!-- TOOLTIP CON CAPA SUPERIOR Z-INDEX 999999 -->
                         <div class="tooltip-card">
                             <h6>👤 FICHA DE CLIENTE</h6>
-                            <div class="tooltip-row"><span class="tooltip-label">Nombre / Firma:</span><span class="tooltip-val">${item.nombre}</span></div>
-                            <div class="tooltip-row"><span class="tooltip-label">CUIT / DNI:</span><span class="tooltip-val">${item.cuit}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">Firma:</span><span class="tooltip-val">${item.nombre}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">CUIT/DNI:</span><span class="tooltip-val">${item.cuit}</span></div>
                             <div class="tooltip-row"><span class="tooltip-label">Teléfono:</span><span class="tooltip-val">${item.telefono}</span></div>
                             <div class="tooltip-row"><span class="tooltip-label">Mail:</span><span class="tooltip-val">${item.mail}</span></div>
                             <div class="tooltip-row"><span class="tooltip-label">Dirección:</span><span class="tooltip-val">${item.direccion}</span></div>
@@ -1480,8 +1495,8 @@
             document.getElementById('id_prop_seleccionado').value = '';
             document.getElementById('id_comp_seleccionado').value = '';
             document.getElementById('id_emp_seleccionado').value = '';
-            document.getElementById('select_prop_existente').value = '';
-            document.getElementById('select_comp_existente').value = '';
+            document.getElementById('input_buscar_prop').value = '';
+            document.getElementById('input_buscar_comp').value = '';
             document.getElementById('chk_es_emprendimiento').checked = false;
             toggleSeccionEmprendimiento();
             toggleTipoPersona('prop', 'fisica');
