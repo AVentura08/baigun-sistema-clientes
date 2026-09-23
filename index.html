@@ -65,7 +65,6 @@
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
-        /* BUSCADOR AUTOCOMPLETABLE ESTILIZADO */
         .autocomplete-container { position: relative; width: 100%; }
         .autocomplete-box { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: white; border: 2px solid var(--brand-blue); border-radius: 0 0 5px 5px; max-height: 160px; overflow-y: auto; box-shadow: 0 6px 12px rgba(0,0,0,0.2); display: none; }
         .autocomplete-row { padding: 6px 8px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #e2e8f0; color: var(--text-dark); background: white; }
@@ -115,8 +114,16 @@
 
         .top-table { width: 100%; border-collapse: collapse; font-size: 9px; }
         .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
-        .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; }
+        .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; position: relative; }
         
+        /* POPUP / TOOLTIP EJECUTIVO EN HOVER */
+        .tooltip-card { display: none; position: absolute; bottom: 100%; left: 0; z-index: 1000; width: 220px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); border: 1px solid #3b82f6; font-size: 9px; text-align: left; }
+        td:hover .tooltip-card { display: block; }
+        .tooltip-card h6 { margin: 0 0 4px 0; color: #60a5fa; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #1e3a8a; padding-bottom: 2px; }
+        .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .tooltip-label { color: #94a3b8; font-weight: 600; }
+        .tooltip-val { color: #f8fafc; font-weight: 700; text-align: right; }
+
         .doble-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .chart-box { display: flex; flex-direction: column; align-items: center; }
         .chart-box h6 { margin: 0 0 4px 0; font-size: 8.5px; color: var(--brand-dark); text-align: center; text-transform: uppercase; }
@@ -381,7 +388,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO -->
+        <!-- VISTA CEO CON FICHA POPUP EN HOVER Y EXCEL EXTENDIDO -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -518,7 +525,7 @@
                     <div class="ceo-card-widget" style="flex:1; display:flex; flex-direction:column;">
                         <h5>
                             <span>🏆 MATRIZ TOP 10 COMPRADORES / INVERSORES</span>
-                            <span style="font-size:8.5px; color:#64748b; font-weight:normal;">Perfil, Frecuencia y Concentración</span>
+                            <span style="font-size:8.5px; color:#64748b; font-weight:normal;">Pasa el mouse para ver la Ficha Completa</span>
                         </h5>
                         <div style="overflow-y:auto; flex:1;">
                             <table class="top-table">
@@ -847,7 +854,7 @@
             listaClientesGlobal = data || [];
         }
 
-        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO EN TIEMPO REAL
+        // LÓGICA DE AUTOCOMPLETADO Y FILTRADO FLOTANTE
         function buscarYFiltrarFlotante(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const box = document.getElementById(`box_results_${tipo}`);
@@ -878,7 +885,6 @@
                 let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
                 row.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
                 
-                // INYECCIÓN DIRECTA DE DATOS AL HACER CLIC CON EL RATÓN
                 row.addEventListener('mousedown', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -895,14 +901,11 @@
         function ejecutarInyeccionDirectaDatos(tipo, c) {
             const prefix = tipo === 'prop' ? '_prop' : '_comp';
             
-            // 1. Guardar ID interno de Supabase
             document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
 
-            // 2. Colocar texto en el buscador
             let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
             document.getElementById(`input_buscar_${prefix}`).value = display;
 
-            // 3. Ajustar tipo de persona
             const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
             const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
             const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
@@ -915,7 +918,6 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
-            // 4. ESCRIBIR Y AUTOCOMPLETAR TODOS LOS CAMPOS DE LA PANTALLA VISIBLEMENTE
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
             document.getElementById('razon_social' + prefix).value = c.razon_social || '';
@@ -939,7 +941,6 @@
             document.getElementById('provincia' + prefix).value = '';
         }
 
-        // Cierra los desplegables flotantes al hacer clic afuera
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.autocomplete-container')) {
                 document.querySelectorAll('.autocomplete-box').forEach(el => el.style.display = 'none');
@@ -1049,14 +1050,30 @@
                     conteoSectoresCant[secNombre] = (conteoSectoresCant[secNombre] || 0) + 1;
                     conteoSectoresMonto[secNombre] = (conteoSectoresMonto[secNombre] || 0) + valorNum;
 
+                    // CONSTRUCCIÓN DE MATRIZ Y DETALLES EXTENDIDOS PARA EXCEL
+                    let propDetalleTxt = [];
+                    let compDetalleTxt = [];
+
                     op.clientesDetalle.forEach(det => {
-                        if (det.rol !== 'Propietario') {
+                        const c = det.cliente || {};
+                        const infoExt = `${det.nombreMostrar} [CUIT/DNI: ${c.cuit_dni || 'S/D'}, Tel: ${c.telefono || 'S/D'}, Mail: ${c.mail || 'S/D'}, Dir: ${c.direccion || 'S/D'}, Prov: ${c.provincia || 'S/D'}]`;
+
+                        if (det.rol === 'Propietario') {
+                            propDetalleTxt.push(infoExt);
+                        } else {
+                            compDetalleTxt.push(infoExt);
+
                             const nom = det.nombreMostrar;
                             if (nom && nom !== '-') {
                                 if (!mapaTopCompradores[nom]) {
                                     mapaTopCompradores[nom] = {
                                         nombre: nom,
-                                        esJuridica: det.cliente?.es_persona_juridica || Boolean(det.cliente?.razon_social),
+                                        esJuridica: c.es_persona_juridica || Boolean(c.razon_social),
+                                        cuit: c.cuit_dni || 'S/D',
+                                        telefono: c.telefono || 'S/D',
+                                        mail: c.mail || 'S/D',
+                                        direccion: c.direccion || 'S/D',
+                                        provincia: c.provincia || 'S/D',
                                         ops: 0,
                                         monto: 0,
                                         rolesMap: {},
@@ -1087,6 +1104,7 @@
                     `;
                     tbody.appendChild(tr);
 
+                    // REGISTRO EXTENDIDO PARA EXCEL POR LÍNEA
                     datosExportarCEO.push({
                         "# Operación": op['#'] || '',
                         "Fecha": op['Fecha'] || '',
@@ -1099,8 +1117,10 @@
                         "Productor": op.empData?.productor || '-',
                         "Vendedor / Asesor": op.vendedorVal,
                         "Valor Cierre": op.valorCierreVal || '-',
-                        "Propietarios": op.propText,
-                        "Compradores / Inquilinos": op.compText,
+                        "Propietario(s) Nombre": op.propText,
+                        "Propietarios Detalle Completo": propDetalleTxt.join(' | ') || '-',
+                        "Comprador(es) Nombre": op.compText,
+                        "Compradores Detalle Completo": compDetalleTxt.join(' | ') || '-',
                         "Estado Carga": op.estadoCalculado
                     });
                 });
@@ -1119,6 +1139,7 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
+        // RENDERIZADO DE MATRIZ CON TOOLTIP/POPUP AL PASAR EL MOUSE (HOVER)
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
@@ -1153,7 +1174,20 @@
 
                 tr.innerHTML = `
                     <td style="font-weight:800; color:#64748b; text-align:center;">#${index + 1}</td>
-                    <td><a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a></td>
+                    <td style="position:relative;">
+                        <a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a>
+                        
+                        <!-- FICHA COMPLETA FLOTANTE EN HOVER -->
+                        <div class="tooltip-card">
+                            <h6>👤 FICHA DE CLIENTE</h6>
+                            <div class="tooltip-row"><span class="tooltip-label">Nombre / Firma:</span><span class="tooltip-val">${item.nombre}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">CUIT / DNI:</span><span class="tooltip-val">${item.cuit}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">Teléfono:</span><span class="tooltip-val">${item.telefono}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">Mail:</span><span class="tooltip-val">${item.mail}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">Dirección:</span><span class="tooltip-val">${item.direccion}</span></div>
+                            <div class="tooltip-row"><span class="tooltip-label">Provincia:</span><span class="tooltip-val">${item.provincia}</span></div>
+                        </div>
+                    </td>
                     <td style="text-align:center;"><span class="badge-part">${tipoPersonaTxt}</span></td>
                     <td style="text-align:center;"><span class="badge-part" style="background:#dbeafe; color:#1e40af; font-weight:800;">${item.ops}</span></td>
                     <td style="text-align:center; font-size:8px; color:#475569;">${rolesTxt}</td>
@@ -1446,8 +1480,8 @@
             document.getElementById('id_prop_seleccionado').value = '';
             document.getElementById('id_comp_seleccionado').value = '';
             document.getElementById('id_emp_seleccionado').value = '';
-            document.getElementById('input_buscar_prop').value = '';
-            document.getElementById('input_buscar_comp').value = '';
+            document.getElementById('select_prop_existente').value = '';
+            document.getElementById('select_comp_existente').value = '';
             document.getElementById('chk_es_emprendimiento').checked = false;
             toggleSeccionEmprendimiento();
             toggleTipoPersona('prop', 'fisica');
