@@ -116,7 +116,6 @@
         .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
         .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; position: relative; }
         
-        /* POPUP FLOTANTE DE CAPA SUPERIOR (Z-INDEX SUPERIOR) */
         .tooltip-card { display: none; position: absolute; top: 22px; left: 10px; z-index: 999999; width: 230px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #60a5fa; font-size: 9.5px; text-align: left; pointer-events: none; }
         td:hover .tooltip-card { display: block; }
         .tooltip-card h6 { margin: 0 0 4px 0; color: #60a5fa; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #1e3a8a; padding-bottom: 2px; }
@@ -288,7 +287,7 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
-                        <!-- PROPIETARIO CON BUSCADOR DE TEXTO FLOTANTE -->
+                        <!-- PROPIETARIO -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
@@ -317,8 +316,9 @@
                                 </div>
 
                                 <div class="form-row">
-                                    <div class="form-group"><label>CUIT/DNI:</label><input type="text" id="cuit_prop" placeholder="20-12345678-9"></div>
-                                    <div class="form-group"><label>Teléfono:</label><input type="text" id="contacto_prop" placeholder="11-5566-7788"></div>
+                                    <!-- RESTRICCIÓN DÍGITOS PUROS PARA CUIT Y TELÉFONO -->
+                                    <div class="form-group"><label>CUIT/DNI (Solo números):</label><input type="text" id="cuit_prop" placeholder="20123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+                                    <div class="form-group"><label>Teléfono (Solo números):</label><input type="text" id="contacto_prop" placeholder="1155667788" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                 </div>
 
                                 <div class="form-group"><label>Mail:</label><input type="email" id="mail_prop" placeholder="carlos@ejemplo.com"></div>
@@ -330,7 +330,7 @@
                             </div>
                         </div>
 
-                        <!-- CONTRAPARTE CON BUSCADOR DE TEXTO FLOTANTE -->
+                        <!-- CONTRAPARTE -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
@@ -369,8 +369,9 @@
                                 </div>
 
                                 <div class="form-row">
-                                    <div class="form-group"><label>CUIT/DNI:</label><input type="text" id="cuit_comp" placeholder="27-87654321-0"></div>
-                                    <div class="form-group"><label>Teléfono:</label><input type="text" id="contacto_comp" placeholder="11-9988-7766"></div>
+                                    <!-- RESTRICCIÓN DÍGITOS PUROS PARA CUIT Y TELÉFONO -->
+                                    <div class="form-group"><label>CUIT/DNI (Solo números):</label><input type="text" id="cuit_comp" placeholder="27876543210" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
+                                    <div class="form-group"><label>Teléfono (Solo números):</label><input type="text" id="contacto_comp" placeholder="1199887766" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                 </div>
 
                                 <div class="form-group"><label>Mail:</label><input type="email" id="mail_comp" placeholder="maria@ejemplo.com"></div>
@@ -854,7 +855,7 @@
             listaClientesGlobal = data || [];
         }
 
-        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO EN TIEMPO REAL
+        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO
         function buscarYFiltrarFlotante(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const box = document.getElementById(`box_results_${tipo}`);
@@ -918,11 +919,15 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
+            // MANTENIMIENTO DE DÍGITOS PUROS
+            const cuitLimpio = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
+            const telLimpio = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
+
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
             document.getElementById('razon_social' + prefix).value = c.razon_social || '';
-            document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
-            document.getElementById('contacto' + prefix).value = c.telefono || '';
+            document.getElementById('cuit' + prefix).value = cuitLimpio;
+            document.getElementById('contacto' + prefix).value = telLimpio;
             document.getElementById('mail' + prefix).value = c.mail || '';
             document.getElementById('direccion' + prefix).value = c.direccion || '';
             document.getElementById('provincia' + prefix).value = c.provincia || '';
@@ -1057,15 +1062,19 @@
                     op.clientesDetalle.forEach(det => {
                         const c = det.cliente || {};
 
+                        // Sanitizar números
+                        const cuitNum = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
+                        const telNum = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
+
                         if (det.rol === 'Propietario') {
-                            if (c.cuit_dni) propCuit.push(c.cuit_dni);
-                            if (c.telefono) propTel.push(c.telefono);
+                            if (cuitNum) propCuit.push(cuitNum);
+                            if (telNum) propTel.push(telNum);
                             if (c.mail) propMail.push(c.mail);
                             if (c.direccion) propDir.push(c.direccion);
                             if (c.provincia) propProv.push(c.provincia);
                         } else {
-                            if (c.cuit_dni) compCuit.push(c.cuit_dni);
-                            if (c.telefono) compTel.push(c.telefono);
+                            if (cuitNum) compCuit.push(cuitNum);
+                            if (telNum) compTel.push(telNum);
                             if (c.mail) compMail.push(c.mail);
                             if (c.direccion) compDir.push(c.direccion);
                             if (c.provincia) compProv.push(c.provincia);
@@ -1076,8 +1085,8 @@
                                     mapaTopCompradores[nom] = {
                                         nombre: nom,
                                         esJuridica: c.es_persona_juridica || Boolean(c.razon_social),
-                                        cuit: c.cuit_dni || 'S/D',
-                                        telefono: c.telefono || 'S/D',
+                                        cuit: cuitNum || 'S/D',
+                                        telefono: telNum || 'S/D',
                                         mail: c.mail || 'S/D',
                                         direccion: c.direccion || 'S/D',
                                         provincia: c.provincia || 'S/D',
@@ -1111,7 +1120,7 @@
                     `;
                     tbody.appendChild(tr);
 
-                    // EXCEL CON TODAS LAS COLUMNAS INDIVIDUALES EN CELDAS SEPARADAS
+                    // EXCEL CON CELDAS 100% INDIVIDUALES POR DATO
                     datosExportarCEO.push({
                         "# Operación": op['#'] || '',
                         "Fecha": op['Fecha'] || '',
@@ -1154,7 +1163,7 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
-        // MATRIZ TOP 10 CON POPUP / TOOLTIP VISIBLE DE CAPA SUPERIOR
+        // MATRIZ TOP 10 CON POPUP / TOOLTIP CON VISIBILIDAD GARANTIZADA
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
@@ -1192,7 +1201,7 @@
                     <td style="position:relative;">
                         <a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a>
                         
-                        <!-- TOOLTIP CON CAPA SUPERIOR Z-INDEX 999999 -->
+                        <!-- TOOLTIP CON CAPA SUPERIOR SUPERPUESTA Z-INDEX 999999 -->
                         <div class="tooltip-card">
                             <h6>👤 FICHA DE CLIENTE</h6>
                             <div class="tooltip-row"><span class="tooltip-label">Firma:</span><span class="tooltip-val">${item.nombre}</span></div>
@@ -1428,8 +1437,9 @@
             const apellido = document.getElementById('apellido' + prefix).value.trim();
             const razonSocial = document.getElementById('razon_social' + prefix).value.trim();
             
-            const cuit = document.getElementById('cuit' + prefix).value.trim();
-            const telefono = document.getElementById('contacto' + prefix).value.trim();
+            // SANITIZACIÓN FINAL DE DÍGITOS PUROS PARA BASE DE DATOS
+            const cuit = document.getElementById('cuit' + prefix).value.trim().replace(/[^0-9]/g, '');
+            const telefono = document.getElementById('contacto' + prefix).value.trim().replace(/[^0-9]/g, '');
             const mail = document.getElementById('mail' + prefix).value.trim();
             const direccion = document.getElementById('direccion' + prefix).value.trim();
             const provincia = document.getElementById('provincia' + prefix).value.trim();
