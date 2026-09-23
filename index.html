@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -108,7 +107,6 @@
         .ceo-card-widget { background: white; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .ceo-card-widget h5 { margin: 0 0 6px 0; color: var(--brand-dark); font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
 
-        /* TABLA MATRIZ TOP 10 CON COLUMNAS ESTRATÉGICAS */
         .top-table { width: 100%; border-collapse: collapse; font-size: 9px; }
         .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
         .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; }
@@ -370,7 +368,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO CON MATRIZ TOP 10 Y CAMPOS ESTRATÉGICOS -->
+        <!-- VISTA CEO CON BUSCADORES DE TEXTO DIRECTOS (DIRECCIÓN / PROYECTO / INTERVINIENTE) -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -384,9 +382,9 @@
                 <div class="ceo-filter-layer">
                     <div style="font-weight:700; color:var(--brand-dark); font-size:10px; margin-right:6px;">📅 TEMPORALIDAD:</div>
                     
-                    <div class="form-group" style="margin:0; width: 120px;">
+                    <div class="form-group" style="margin:0; width: 110px;">
                         <label>Año:</label>
-                        <select id="ceo_filtro_anio" onchange="actualizarCascadaCEO()">
+                        <select id="ceo_filtro_anio" onchange="aplicarFiltrosCEO()">
                             <option value="todos">Todos los Años</option>
                             <option value="2026">2026</option>
                             <option value="2025">2025</option>
@@ -394,9 +392,9 @@
                         </select>
                     </div>
 
-                    <div class="form-group" style="margin:0; width: 180px;">
+                    <div class="form-group" style="margin:0; width: 160px;">
                         <label>Mes / Quarter:</label>
-                        <select id="ceo_filtro_mes" onchange="actualizarCascadaCEO()">
+                        <select id="ceo_filtro_mes" onchange="aplicarFiltrosCEO()">
                             <option value="todos">Todos los Meses</option>
                             <option value="1">Enero</option>
                             <option value="2">Febrero</option>
@@ -417,9 +415,16 @@
                         </select>
                     </div>
 
+                    <!-- BUSCADOR LIBRE DE PROYECTO O DIRECCIÓN DE INMUEBLE -->
                     <div class="form-group" style="margin:0; flex:1.5;">
-                        <label>🔍 Buscar Interviniente / Firmante Específico:</label>
-                        <input type="text" id="ceo_filtro_interviniente" placeholder="Escribir nombre o firma para ver su historial..." onkeyup="aplicarFiltrosCEO()">
+                        <label>🏢📍 BUSCAR PROYECTO O DIRECCIÓN:</label>
+                        <input type="text" id="ceo_filtro_direccion_texto" placeholder="Escribir 'El Dorrego', 'Libertador', etc..." onkeyup="aplicarFiltrosCEO()" style="font-weight:700; color:var(--brand-blue);">
+                    </div>
+
+                    <!-- BUSCADOR LIBRE DE INTERVINIENTE -->
+                    <div class="form-group" style="margin:0; flex:1.5;">
+                        <label>🔍 BUSCAR INTERVINIENTE / CLIENTE:</label>
+                        <input type="text" id="ceo_filtro_interviniente" placeholder="Escribir nombre o firma..." onkeyup="aplicarFiltrosCEO()">
                     </div>
                 </div>
 
@@ -428,7 +433,7 @@
 
                     <div class="form-group" style="margin:0; flex:1.2;">
                         <label>Sector / Tipo:</label>
-                        <select id="ceo_filtro_sector" onchange="actualizarCascadaCEO()">
+                        <select id="ceo_filtro_sector" onchange="aplicarFiltrosCEO()">
                             <option value="todos">-- Todos --</option>
                             <option value="res_emprendimientos">Residencial - Emprendimientos</option>
                             <option value="res_usados">Residencial - Usados</option>
@@ -440,30 +445,16 @@
                     </div>
 
                     <div class="form-group" style="margin:0; flex:1.2;">
-                        <label>Origen:</label>
-                        <select id="ceo_filtro_origen_inmueble" onchange="actualizarCascadaCEO()">
+                        <label>Origen Inmueble:</label>
+                        <select id="ceo_filtro_origen_inmueble" onchange="aplicarFiltrosCEO()">
                             <option value="todos">Todos</option>
                             <option value="solo_emp">Solo Emprendimientos</option>
                             <option value="solo_ind">Solo Usados / Indiv.</option>
                         </select>
                     </div>
 
-                    <div class="form-group" style="margin:0; flex:1.4;">
-                        <label>🏢 Emprendimiento Oficial:</label>
-                        <select id="ceo_filtro_emprendimiento" onchange="aplicarFiltrosCEO()" style="font-weight:bold; color:var(--brand-dark);">
-                            <option value="todos">-- Todos los Proyectos --</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin:0; flex:1.4;">
-                        <label>📍 Dirección Individual:</label>
-                        <select id="ceo_filtro_inmueble_individual" onchange="aplicarFiltrosCEO()">
-                            <option value="todos">-- Todas las Direcciones --</option>
-                        </select>
-                    </div>
-
                     <div class="form-group" style="margin:0; flex:1;">
-                        <label>🧑‍💼 Agente:</label>
+                        <label>🧑‍💼 Agente / Vendedor:</label>
                         <select id="ceo_filtro_vendedor" onchange="aplicarFiltrosCEO()">
                             <option value="todos">-- Todos --</option>
                         </select>
@@ -644,7 +635,7 @@
                 vistaEjecutiva.style.display = 'flex';
                 vistaEjecutiva.style.flexDirection = 'column';
                 if (btnCarga && btnCeo) { btnCarga.classList.remove('active'); btnCeo.classList.add('active'); }
-                actualizarCascadaCEO();
+                aplicarFiltrosCEO();
             } else {
                 vistaOperativa.style.display = 'flex';
                 vistaEjecutiva.style.display = 'none';
@@ -823,7 +814,7 @@
 
             poblarAgentesCEO();
             renderizarTabla();
-            actualizarCascadaCEO();
+            aplicarFiltrosCEO();
         }
 
         function poblarAgentesCEO() {
@@ -857,82 +848,15 @@
             return true;
         }
 
-        function actualizarCascadaCEO() {
-            const anioSel = document.getElementById('ceo_filtro_anio').value;
-            const mesSel = document.getElementById('ceo_filtro_mes').value;
-            const sectorSel = document.getElementById('ceo_filtro_sector').value;
-            const origenSel = document.getElementById('ceo_filtro_origen_inmueble').value;
-
-            const opsPremilinares = listaOperacionesGlobal.filter(op => {
-                const cumpleAnio = (anioSel === 'todos') || (op.anioOp === anioSel);
-                let cumpleMes = true;
-                if (mesSel !== 'todos') {
-                    if (mesSel === 'q1') cumpleMes = ['1', '2', '3'].includes(op.mesOp);
-                    else if (mesSel === 'q2') cumpleMes = ['4', '5', '6'].includes(op.mesOp);
-                    else if (mesSel === 'q3') cumpleMes = ['7', '8', '9'].includes(op.mesOp);
-                    else if (mesSel === 'q4') cumpleMes = ['10', '11', '12'].includes(op.mesOp);
-                    else cumpleMes = (op.mesOp === mesSel);
-                }
-                const cumpleSector = evaluarSectorElegido(op, sectorSel);
-                
-                let cumpleOrigen = true;
-                if (origenSel === 'solo_emp') cumpleOrigen = op.esEmp;
-                if (origenSel === 'solo_ind') cumpleOrigen = !op.esEmp;
-
-                return cumpleAnio && cumpleMes && cumpleSector && cumpleOrigen;
-            });
-
-            const selectEmp = document.getElementById('ceo_filtro_emprendimiento');
-            const valorEmpActual = selectEmp.value;
-            selectEmp.innerHTML = '<option value="todos">-- Todos los Emprendimientos --</option>';
-
-            const emprendimientosOficiales = new Set();
-            opsPremilinares.forEach(op => {
-                if (op.esEmp && op.nombreEmprendimientoOficial) {
-                    emprendimientosOficiales.add(op.nombreEmprendimientoOficial);
-                }
-            });
-
-            Array.from(emprendimientosOficiales).sort().forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p;
-                opt.textContent = `🏗️ ${p}`;
-                selectEmp.appendChild(opt);
-            });
-            if (emprendimientosOficiales.has(valorEmpActual)) selectEmp.value = valorEmpActual;
-
-            const selectInd = document.getElementById('ceo_filtro_inmueble_individual');
-            const valorIndActual = selectInd.value;
-            selectInd.innerHTML = '<option value="todos">-- Todas las Direcciones --</option>';
-
-            const inmueblesIndividuales = new Set();
-            opsPremilinares.forEach(op => {
-                if (!op.esEmp && op.direccionIndividual) {
-                    inmueblesIndividuales.add(op.direccionIndividual);
-                }
-            });
-
-            Array.from(inmueblesIndividuales).sort().forEach(d => {
-                const opt = document.createElement('option');
-                opt.value = d;
-                opt.textContent = `📍 ${d}`;
-                selectInd.appendChild(opt);
-            });
-            if (inmueblesIndividuales.has(valorIndActual)) selectInd.value = valorIndActual;
-
-            aplicarFiltrosCEO();
-        }
-
         function limpiarFiltrosCEO() {
             document.getElementById('ceo_filtro_anio').value = 'todos';
             document.getElementById('ceo_filtro_mes').value = 'todos';
             document.getElementById('ceo_filtro_sector').value = 'todos';
             document.getElementById('ceo_filtro_origen_inmueble').value = 'todos';
-            document.getElementById('ceo_filtro_emprendimiento').value = 'todos';
-            document.getElementById('ceo_filtro_inmueble_individual').value = 'todos';
+            document.getElementById('ceo_filtro_direccion_texto').value = '';
             document.getElementById('ceo_filtro_vendedor').value = 'todos';
             document.getElementById('ceo_filtro_interviniente').value = '';
-            actualizarCascadaCEO();
+            aplicarFiltrosCEO();
         }
 
         function filtrarDirectoInterviniente(nombre) {
@@ -946,8 +870,7 @@
             const mesSel = document.getElementById('ceo_filtro_mes').value;
             const sectorSel = document.getElementById('ceo_filtro_sector').value;
             const origenSel = document.getElementById('ceo_filtro_origen_inmueble').value;
-            const empSel = document.getElementById('ceo_filtro_emprendimiento').value;
-            const indSel = document.getElementById('ceo_filtro_inmueble_individual').value;
+            const dirBuscada = document.getElementById('ceo_filtro_direccion_texto').value.toLowerCase().trim();
             const vendSel = document.getElementById('ceo_filtro_vendedor').value;
             const intervinienteBuscado = document.getElementById('ceo_filtro_interviniente').value.toLowerCase().trim();
 
@@ -967,8 +890,15 @@
                 if (origenSel === 'solo_emp') cumpleOrigen = op.esEmp;
                 if (origenSel === 'solo_ind') cumpleOrigen = !op.esEmp;
 
-                const cumpleEmp = (empSel === 'todos') || (op.esEmp && op.nombreEmprendimientoOficial === empSel);
-                const cumpleInd = (indSel === 'todos') || (!op.esEmp && op.direccionIndividual === indSel);
+                // BUSCADOR LIBRE DE DIRECCIÓN O PROYECTO
+                let cumpleDireccion = true;
+                if (dirBuscada) {
+                    const matchNomMostrar = (op.nombreMostrar || '').toLowerCase().includes(dirBuscada);
+                    const matchEmpOficial = (op.nombreEmprendimientoOficial || '').toLowerCase().includes(dirBuscada);
+                    const matchDirInd = (op.direccionIndividual || '').toLowerCase().includes(dirBuscada);
+                    cumpleDireccion = matchNomMostrar || matchEmpOficial || matchDirInd;
+                }
+
                 const cumpleVend = (vendSel === 'todos') || op.vendedorVal === vendSel;
 
                 let cumpleInterviniente = true;
@@ -978,7 +908,7 @@
                     cumpleInterviniente = matchProp || matchComp;
                 }
 
-                return cumpleAnio && cumpleMes && cumpleSector && cumpleOrigen && cumpleEmp && cumpleInd && cumpleVend && cumpleInterviniente;
+                return cumpleAnio && cumpleMes && cumpleSector && cumpleOrigen && cumpleDireccion && cumpleVend && cumpleInterviniente;
             });
 
             const tbody = document.querySelector('#tabla-ceo-operaciones tbody');
@@ -1099,12 +1029,10 @@
                 const tr = document.createElement('tr');
                 const montoTxt = item.monto > 0 ? `$ ${item.monto.toLocaleString('es-AR')}` : '-';
 
-                // Formatear Roles Históricos
                 const rolesTxt = Object.keys(item.rolesMap)
                     .map(r => `${item.rolesMap[r]} ${r.substring(0,4)}`)
                     .join(' / ');
 
-                // Proyecto Clave
                 let proyectoClave = '-';
                 let maxVal = -1;
                 Object.keys(item.proyectosMap).forEach(p => {
@@ -1136,7 +1064,6 @@
             const dataMonto = labels.map(l => conteoSectoresMonto[l] || 0);
             const colors = ['#1d4ed8', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
 
-            // 1. CHART CANTIDAD
             const ctxCant = document.getElementById('chartSectoresCantCEO').getContext('2d');
             if (chartCantInstance) chartCantInstance.destroy();
             chartCantInstance = new Chart(ctxCant, {
@@ -1153,7 +1080,6 @@
                 </div>
             `).join('');
 
-            // 2. CHART MONTO
             const ctxMonto = document.getElementById('chartSectoresMontoCEO').getContext('2d');
             if (chartMontoInstance) chartMontoInstance.destroy();
             chartMontoInstance = new Chart(ctxMonto, {
