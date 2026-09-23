@@ -59,11 +59,16 @@
         tbody tr:hover { background-color: #dbeafe !important; cursor: pointer; }
         tbody tr.selected { background-color: #bfdbfe !important; border-left: 3px solid var(--brand-blue); }
 
-        .form-group { margin-bottom: 4px; text-align: left; }
+        .form-group { margin-bottom: 4px; text-align: left; position: relative; }
         .form-row { display: flex; gap: 6px; }
         .form-row .form-group { flex: 1; }
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
+
+        /* LISTA DESPLEGABLE AUTOCOMPLETABLE FLOTANTE */
+        .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--brand-blue); border-radius: 0 0 4px 4px; max-height: 120px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: none; }
+        .autocomplete-item { padding: 4px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+        .autocomplete-item:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 600; }
 
         .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
         .checkbox-emp input { width: auto; cursor: pointer; }
@@ -275,13 +280,14 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
+                        <!-- PROPIETARIO CON BUSCADOR AUTOCOMPLETABLE -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
                                 <div class="form-group">
-                                    <select id="select_prop_existente" onchange="seleccionarExistente('prop')">
-                                        <option value="">-- Buscar o Cargar Nuevo --</option>
-                                    </select>
+                                    <label>🔍 Buscar Existente:</label>
+                                    <input type="text" id="input_buscar_prop" placeholder="Tipear Nombre, Razón Social o CUIT..." onkeyup="filtrarClientesAutoComplete('prop')" autocomplete="off" style="font-weight:600; color:var(--brand-blue);">
+                                    <div id="results_prop" class="autocomplete-results"></div>
                                 </div>
                                 <input type="hidden" id="id_prop_seleccionado">
                                 
@@ -314,21 +320,23 @@
                             </div>
                         </div>
 
+                        <!-- CONTRAPARTE CON BUSCADOR AUTOCOMPLETABLE -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
                                 <div class="form-row">
-                                    <div class="form-group">
+                                    <div class="form-group" style="flex:0.8;">
+                                        <label>Rol:</label>
                                         <select id="rol_contraparte" style="font-weight:600;">
                                             <option value="Comprador">Comprador</option>
                                             <option value="Inquilino">Inquilino</option>
                                             <option value="Inversor">Inversor</option>
                                         </select>
                                     </div>
-                                    <div class="form-group">
-                                        <select id="select_comp_existente" onchange="seleccionarExistente('comp')">
-                                            <option value="">-- Buscar o Cargar --</option>
-                                        </select>
+                                    <div class="form-group" style="flex:1.2;">
+                                        <label>🔍 Buscar Existente:</label>
+                                        <input type="text" id="input_buscar_comp" placeholder="Tipear Nombre, Razón Social o CUIT..." onkeyup="filtrarClientesAutoComplete('comp')" autocomplete="off" style="font-weight:600; color:var(--brand-blue);">
+                                        <div id="results_comp" class="autocomplete-results"></div>
                                     </div>
                                 </div>
                                 <input type="hidden" id="id_comp_seleccionado">
@@ -368,7 +376,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO CON BUSCADORES DE TEXTO DIRECTOS (DIRECCIÓN / PROYECTO / INTERVINIENTE) -->
+        <!-- VISTA CEO -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -415,13 +423,11 @@
                         </select>
                     </div>
 
-                    <!-- BUSCADOR LIBRE DE PROYECTO O DIRECCIÓN DE INMUEBLE -->
                     <div class="form-group" style="margin:0; flex:1.5;">
                         <label>🏢📍 BUSCAR PROYECTO O DIRECCIÓN:</label>
                         <input type="text" id="ceo_filtro_direccion_texto" placeholder="Escribir 'El Dorrego', 'Libertador', etc..." onkeyup="aplicarFiltrosCEO()" style="font-weight:700; color:var(--brand-blue);">
                     </div>
 
-                    <!-- BUSCADOR LIBRE DE INTERVINIENTE -->
                     <div class="form-group" style="margin:0; flex:1.5;">
                         <label>🔍 BUSCAR INTERVINIENTE / CLIENTE:</label>
                         <input type="text" id="ceo_filtro_interviniente" placeholder="Escribir nombre o firma..." onkeyup="aplicarFiltrosCEO()">
@@ -481,7 +487,6 @@
                 </div>
             </div>
 
-            <!-- SPLIT CONTAINER -->
             <div class="ceo-split-container">
                 <div class="ceo-left-panel">
                     <div class="table-scroll-container">
@@ -505,7 +510,6 @@
                 </div>
 
                 <div class="ceo-right-panel">
-                    <!-- WIDGET MATRIZ TOP 10 COMPRADORES / INVERSORES -->
                     <div class="ceo-card-widget" style="flex:1; display:flex; flex-direction:column;">
                         <h5>
                             <span>🏆 MATRIZ TOP 10 COMPRADORES / INVERSORES</span>
@@ -532,7 +536,6 @@
                         </div>
                     </div>
 
-                    <!-- WIDGET DOBLE GRÁFICO DE SECTORES -->
                     <div class="ceo-card-widget" style="height:145px; flex-shrink:0;">
                         <h5>
                             <span>🏢 Distribución por Sector</span>
@@ -834,6 +837,74 @@
             });
         }
 
+        // LÓGICA DE AUTOCOMPLETADO Y BÚSQUEDA DINÁMICA DE CLIENTES EN LA CARGA
+        function filtrarClientesAutoComplete(tipo) {
+            const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
+            const resultsDiv = document.getElementById(`results_${tipo}`);
+            resultsDiv.innerHTML = '';
+
+            if (query.length === 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const coincidencia = listaClientesGlobal.filter(c => {
+                const nom = (c.nombre_razon_social || `${c.apellido || ''} ${c.nombre || ''} ${c.razon_social || ''}`).toLowerCase();
+                const cuit = (c.cuit_dni || '').toLowerCase();
+                return nom.includes(query) || cuit.includes(query);
+            });
+
+            if (coincidencia.length === 0) {
+                resultsDiv.innerHTML = `<div class="autocomplete-item" style="color:#64748b;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
+                resultsDiv.style.display = 'block';
+                return;
+            }
+
+            coincidencia.slice(0, 8).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'autocomplete-item';
+                let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
+                div.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
+                
+                div.onclick = () => {
+                    seleccionarExistenteDirecto(tipo, c);
+                    resultsDiv.style.display = 'none';
+                };
+                resultsDiv.appendChild(div);
+            });
+
+            resultsDiv.style.display = 'block';
+        }
+
+        function seleccionarExistenteDirecto(tipo, c) {
+            const prefix = tipo === 'prop' ? '_prop' : '_comp';
+            document.getElementById(`input_buscar_${prefix}`).value = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
+            document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
+
+            const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
+            const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
+            const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
+            
+            if (esJuridica) { radioJuridica.checked = true; toggleTipoPersona(prefix, 'juridica'); } 
+            else { radioFisica.checked = true; toggleTipoPersona(prefix, 'fisica'); }
+
+            document.getElementById('nombre' + prefix).value = c.nombre || '';
+            document.getElementById('apellido' + prefix).value = c.apellido || '';
+            document.getElementById('razon_social' + prefix).value = c.razon_social || '';
+            document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
+            document.getElementById('contacto' + prefix).value = c.telefono || '';
+            document.getElementById('mail' + prefix).value = c.mail || '';
+            document.getElementById('direccion' + prefix).value = c.direccion || '';
+            document.getElementById('provincia' + prefix).value = c.provincia || '';
+        }
+
+        // Ocultar resultados si se hace clic afuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-group')) {
+                document.querySelectorAll('.autocomplete-results').forEach(el => el.style.display = 'none');
+            }
+        });
+
         function evaluarSectorElegido(op, sectorSel) {
             if (sectorSel === 'todos') return true;
             const sec = op.sectorVal.toLowerCase();
@@ -890,7 +961,6 @@
                 if (origenSel === 'solo_emp') cumpleOrigen = op.esEmp;
                 if (origenSel === 'solo_ind') cumpleOrigen = !op.esEmp;
 
-                // BUSCADOR LIBRE DE DIRECCIÓN O PROYECTO
                 let cumpleDireccion = true;
                 if (dirBuscada) {
                     const matchNomMostrar = (op.nombreMostrar || '').toLowerCase().includes(dirBuscada);
@@ -934,12 +1004,10 @@
                     const valorFormateado = (op.valorCierreVal !== null && op.valorCierreVal !== undefined) ? `$ ${valorNum.toLocaleString('es-AR')}` : '-';
                     if (valorNum > 0) montoAcumulado += valorNum;
 
-                    // Agrupar Sectores
                     const secNombre = op.sectorVal || 'Otros';
                     conteoSectoresCant[secNombre] = (conteoSectoresCant[secNombre] || 0) + 1;
                     conteoSectoresMonto[secNombre] = (conteoSectoresMonto[secNombre] || 0) + valorNum;
 
-                    // Agrupar Compradores para Matriz TOP 10
                     op.clientesDetalle.forEach(det => {
                         if (det.rol !== 'Propietario') {
                             const nom = det.nombreMostrar;
@@ -958,10 +1026,8 @@
                                 mapaTopCompradores[nom].ops++;
                                 if (valorNum > 0) mapaTopCompradores[nom].monto += valorNum;
 
-                                // Conteo de Roles Históricos
                                 mapaTopCompradores[nom].rolesMap[det.rol] = (mapaTopCompradores[nom].rolesMap[det.rol] || 0) + 1;
 
-                                // Conteo de Proyectos
                                 const proj = op.nombreMostrar;
                                 if (!mapaTopCompradores[nom].proyectosMap[proj]) mapaTopCompradores[nom].proyectosMap[proj] = 0;
                                 mapaTopCompradores[nom].proyectosMap[proj] += (valorNum > 0 ? valorNum : 1);
@@ -1175,56 +1241,6 @@
         async function cargarComboClientes() {
             const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
             listaClientesGlobal = data || [];
-            
-            ['select_prop_existente', 'select_comp_existente'].forEach(idSelect => {
-                const select = document.getElementById(idSelect);
-                select.innerHTML = '<option value="">-- Buscar o Cargar --</option>';
-                listaClientesGlobal.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id_cliente;
-                    let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
-                    opt.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
-                    select.appendChild(opt);
-                });
-            });
-        }
-
-        function seleccionarExistente(tipo) {
-            const idSel = document.getElementById(tipo === 'prop' ? 'select_prop_existente' : 'select_comp_existente').value;
-            const prefix = tipo === 'prop' ? '_prop' : '_comp';
-
-            if (!idSel) {
-                document.getElementById('id' + prefix + '_seleccionado').value = '';
-                document.getElementById('nombre' + prefix).value = '';
-                document.getElementById('apellido' + prefix).value = '';
-                document.getElementById('razon_social' + prefix).value = '';
-                document.getElementById('cuit' + prefix).value = '';
-                document.getElementById('contacto' + prefix).value = '';
-                document.getElementById('mail' + prefix).value = '';
-                document.getElementById('direccion' + prefix).value = '';
-                document.getElementById('provincia' + prefix).value = '';
-                return;
-            }
-
-            const c = listaClientesGlobal.find(item => item.id_cliente == idSel);
-            if (c) {
-                document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
-                const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
-                const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
-                const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
-                
-                if (esJuridica) { radioJuridica.checked = true; toggleTipoPersona(prefix, 'juridica'); } 
-                else { radioFisica.checked = true; toggleTipoPersona(prefix, 'fisica'); }
-
-                document.getElementById('nombre' + prefix).value = c.nombre || '';
-                document.getElementById('apellido' + prefix).value = c.apellido || '';
-                document.getElementById('razon_social' + prefix).value = c.razon_social || '';
-                document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
-                document.getElementById('contacto' + prefix).value = c.telefono || '';
-                document.getElementById('mail' + prefix).value = c.mail || '';
-                document.getElementById('direccion' + prefix).value = c.direccion || '';
-                document.getElementById('provincia' + prefix).value = c.provincia || '';
-            }
         }
 
         async function seleccionarFila(tr, idOp, valorCierreActual, empData, nombreEmpAlt, esEmp) {
@@ -1394,6 +1410,8 @@
             document.getElementById('id_prop_seleccionado').value = '';
             document.getElementById('id_comp_seleccionado').value = '';
             document.getElementById('id_emp_seleccionado').value = '';
+            document.getElementById('input_buscar_prop').value = '';
+            document.getElementById('input_buscar_comp').value = '';
             document.getElementById('chk_es_emprendimiento').checked = false;
             toggleSeccionEmprendimiento();
             toggleTipoPersona('prop', 'fisica');
