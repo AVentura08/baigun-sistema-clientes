@@ -65,10 +65,6 @@
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
-        .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: white; border: 1px solid var(--brand-blue); border-radius: 0 0 4px 4px; max-height: 140px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: none; }
-        .autocomplete-item { padding: 6px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: var(--text-dark); }
-        .autocomplete-item:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 700; }
-
         .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
         .checkbox-emp input { width: auto; cursor: pointer; }
 
@@ -279,14 +275,14 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
-                        <!-- PROPIETARIO CON BUSCADOR AUTOCOMPLETABLE -->
+                        <!-- PROPIETARIO CON DATALIST NATIVO INFALIBLE -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
                                 <div class="form-group">
                                     <label>🔍 Buscar Existente:</label>
-                                    <input type="text" id="input_buscar_prop" placeholder="Tipear Nombre, Razón Social o CUIT..." onkeyup="filtrarClientesAutoComplete('prop')" autocomplete="off" style="font-weight:600; color:var(--brand-blue);">
-                                    <div id="results_prop" class="autocomplete-results"></div>
+                                    <input type="text" id="input_buscar_prop" list="datalist_clientes_prop" placeholder="Escribir para buscar..." onchange="seleccionarClienteDatalist('prop')" style="font-weight:600; color:var(--brand-blue);">
+                                    <datalist id="datalist_clientes_prop"></datalist>
                                 </div>
                                 <input type="hidden" id="id_prop_seleccionado">
                                 
@@ -319,7 +315,7 @@
                             </div>
                         </div>
 
-                        <!-- CONTRAPARTE CON BUSCADOR AUTOCOMPLETABLE -->
+                        <!-- CONTRAPARTE CON DATALIST NATIVO INFALIBLE -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
@@ -334,8 +330,8 @@
                                     </div>
                                     <div class="form-group" style="flex:1.2;">
                                         <label>🔍 Buscar Existente:</label>
-                                        <input type="text" id="input_buscar_comp" placeholder="Tipear Nombre, Razón Social o CUIT..." onkeyup="filtrarClientesAutoComplete('comp')" autocomplete="off" style="font-weight:600; color:var(--brand-blue);">
-                                        <div id="results_comp" class="autocomplete-results"></div>
+                                        <input type="text" id="input_buscar_comp" list="datalist_clientes_comp" placeholder="Escribir para buscar..." onchange="seleccionarClienteDatalist('comp')" style="font-weight:600; color:var(--brand-blue);">
+                                        <datalist id="datalist_clientes_comp"></datalist>
                                     </div>
                                 </div>
                                 <input type="hidden" id="id_comp_seleccionado">
@@ -836,87 +832,70 @@
             });
         }
 
-        // LÓGICA DE AUTOCOMPLETADO CORREGIDA (CAPTURA EVENTO MOUSEDOWN)
-        function filtrarClientesAutoComplete(tipo) {
-            const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
-            const resultsDiv = document.getElementById(`results_${tipo}`);
-            resultsDiv.innerHTML = '';
+        // AUTOCOMPLETADO NATIVO INFALIBLE CON DATALIST
+        async function cargarComboClientes() {
+            const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
+            listaClientesGlobal = data || [];
 
-            if (query.length === 0) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
+            const dlProp = document.getElementById('datalist_clientes_prop');
+            const dlComp = document.getElementById('datalist_clientes_comp');
+            dlProp.innerHTML = '';
+            dlComp.innerHTML = '';
 
-            const coincidencia = listaClientesGlobal.filter(c => {
-                const nom = (c.nombre_razon_social || `${c.apellido || ''} ${c.nombre || ''} ${c.razon_social || ''}`).toLowerCase();
-                const cuit = (c.cuit_dni || '').toLowerCase();
-                return nom.includes(query) || cuit.includes(query);
-            });
-
-            if (coincidencia.length === 0) {
-                resultsDiv.innerHTML = `<div class="autocomplete-item" style="color:#64748b; cursor:default;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
-                resultsDiv.style.display = 'block';
-                return;
-            }
-
-            coincidencia.slice(0, 8).forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'autocomplete-item';
+            listaClientesGlobal.forEach(c => {
                 let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
-                div.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
-                
-                // Usamos 'mousedown' para que se ejecute ANTES de que el input pierda el foco
-                div.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    seleccionarExistenteDirecto(tipo, c);
-                    resultsDiv.style.display = 'none';
-                });
+                let labelText = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
 
-                resultsDiv.appendChild(div);
+                const opt1 = document.createElement('option');
+                opt1.value = labelText;
+                opt1.dataset.id = c.id_cliente;
+                dlProp.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = labelText;
+                opt2.dataset.id = c.id_cliente;
+                dlComp.appendChild(opt2);
+            });
+        }
+
+        function seleccionarClienteDatalist(tipo) {
+            const prefix = tipo === 'prop' ? '_prop' : '_comp';
+            const valInput = document.getElementById(`input_buscar_${prefix}`).value.trim();
+
+            const c = listaClientesGlobal.find(item => {
+                let display = item.razon_social ? item.razon_social : (item.apellido ? `${item.apellido}, ${item.nombre || ''}` : item.nombre_razon_social);
+                let labelText = `${display} ${item.cuit_dni ? '(' + item.cuit_dni + ')' : ''}`;
+                return labelText === valInput || display === valInput;
             });
 
-            resultsDiv.style.display = 'block';
-        }
+            if (c) {
+                document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
 
-        function seleccionarExistenteDirecto(tipo, c) {
-            const prefix = tipo === 'prop' ? '_prop' : '_comp';
-            
-            // Asignar ID clave
-            document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
-            
-            // Mostrar nombre en el campo buscador
-            let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
-            document.getElementById(`input_buscar_${prefix}`).value = display;
+                const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
+                const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
+                const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
+                
+                if (esJuridica) { 
+                    radioJuridica.checked = true; 
+                    toggleTipoPersona(prefix, 'juridica'); 
+                } else { 
+                    radioFisica.checked = true; 
+                    toggleTipoPersona(prefix, 'fisica'); 
+                }
 
-            // Seleccionar radio de persona (Física / Jurídica)
-            const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
-            const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
-            const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
-            
-            if (esJuridica) { 
-                radioJuridica.checked = true; 
-                toggleTipoPersona(prefix, 'juridica'); 
-            } else { 
-                radioFisica.checked = true; 
-                toggleTipoPersona(prefix, 'fisica'); 
+                // COMPLETA TODOS LOS CAMPOS VISIBLES E INVISIBLES
+                document.getElementById('nombre' + prefix).value = c.nombre || '';
+                document.getElementById('apellido' + prefix).value = c.apellido || '';
+                document.getElementById('razon_social' + prefix).value = c.razon_social || '';
+                document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
+                document.getElementById('contacto' + prefix).value = c.telefono || '';
+                document.getElementById('mail' + prefix).value = c.mail || '';
+                document.getElementById('direccion' + prefix).value = c.direccion || '';
+                document.getElementById('provincia' + prefix).value = c.provincia || '';
+            } else {
+                document.getElementById('id' + prefix + '_seleccionado').value = '';
             }
-
-            // AUTOCOMPLETAR CAMPOS DEL FORMULARIO
-            document.getElementById('nombre' + prefix).value = c.nombre || '';
-            document.getElementById('apellido' + prefix).value = c.apellido || '';
-            document.getElementById('razon_social' + prefix).value = c.razon_social || '';
-            document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
-            document.getElementById('contacto' + prefix).value = c.telefono || '';
-            document.getElementById('mail' + prefix).value = c.mail || '';
-            document.getElementById('direccion' + prefix).value = c.direccion || '';
-            document.getElementById('provincia' + prefix).value = c.provincia || '';
         }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.form-group')) {
-                document.querySelectorAll('.autocomplete-results').forEach(el => el.style.display = 'none');
-            }
-        });
 
         function evaluarSectorElegido(op, sectorSel) {
             if (sectorSel === 'todos') return true;
@@ -1250,11 +1229,6 @@
         }
 
         function filtrarTexto() { renderizarTabla(); }
-
-        async function cargarComboClientes() {
-            const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
-            listaClientesGlobal = data || [];
-        }
 
         async function seleccionarFila(tr, idOp, valorCierreActual, empData, nombreEmpAlt, esEmp) {
             document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
