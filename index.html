@@ -66,7 +66,7 @@
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
         .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: white; border: 1px solid var(--brand-blue); border-radius: 0 0 4px 4px; max-height: 140px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: none; }
-        .autocomplete-item { padding: 5px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+        .autocomplete-item { padding: 6px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; color: var(--text-dark); }
         .autocomplete-item:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 700; }
 
         .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
@@ -836,7 +836,7 @@
             });
         }
 
-        // LÓGICA DE AUTOCOMPLETADO Y VINCULACIÓN DIRECTA DE DATOS DE CLIENTES
+        // LÓGICA DE AUTOCOMPLETADO CORREGIDA (CAPTURA EVENTO MOUSEDOWN)
         function filtrarClientesAutoComplete(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const resultsDiv = document.getElementById(`results_${tipo}`);
@@ -854,7 +854,7 @@
             });
 
             if (coincidencia.length === 0) {
-                resultsDiv.innerHTML = `<div class="autocomplete-item" style="color:#64748b;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
+                resultsDiv.innerHTML = `<div class="autocomplete-item" style="color:#64748b; cursor:default;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
                 resultsDiv.style.display = 'block';
                 return;
             }
@@ -865,10 +865,13 @@
                 let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
                 div.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
                 
-                div.onclick = () => {
+                // Usamos 'mousedown' para que se ejecute ANTES de que el input pierda el foco
+                div.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
                     seleccionarExistenteDirecto(tipo, c);
                     resultsDiv.style.display = 'none';
-                };
+                });
+
                 resultsDiv.appendChild(div);
             });
 
@@ -878,14 +881,14 @@
         function seleccionarExistenteDirecto(tipo, c) {
             const prefix = tipo === 'prop' ? '_prop' : '_comp';
             
-            // Asignar ID clave para vincular el cliente
+            // Asignar ID clave
             document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
             
-            // Texto del buscador
+            // Mostrar nombre en el campo buscador
             let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
             document.getElementById(`input_buscar_${prefix}`).value = display;
 
-            // Determinar Tipo de Persona (Física / Jurídica) y cambiar radio
+            // Seleccionar radio de persona (Física / Jurídica)
             const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
             const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
             const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
@@ -898,7 +901,7 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
-            // CARGAR TODOS LOS CAMPOS DE LA PARTE DE ABAJO
+            // AUTOCOMPLETAR CAMPOS DEL FORMULARIO
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
             document.getElementById('razon_social' + prefix).value = c.razon_social || '';
