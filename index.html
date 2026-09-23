@@ -65,10 +65,9 @@
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
-        /* LISTA DESPLEGABLE AUTOCOMPLETABLE FLOTANTE */
-        .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: white; border: 1px solid var(--brand-blue); border-radius: 0 0 4px 4px; max-height: 120px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: none; }
-        .autocomplete-item { padding: 4px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
-        .autocomplete-item:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 600; }
+        .autocomplete-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: white; border: 1px solid var(--brand-blue); border-radius: 0 0 4px 4px; max-height: 140px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.15); display: none; }
+        .autocomplete-item { padding: 5px 8px; font-size: 9.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+        .autocomplete-item:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 700; }
 
         .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
         .checkbox-emp input { width: auto; cursor: pointer; }
@@ -837,7 +836,7 @@
             });
         }
 
-        // LÓGICA DE AUTOCOMPLETADO Y BÚSQUEDA DINÁMICA DE CLIENTES EN LA CARGA
+        // LÓGICA DE AUTOCOMPLETADO Y VINCULACIÓN DIRECTA DE DATOS DE CLIENTES
         function filtrarClientesAutoComplete(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const resultsDiv = document.getElementById(`results_${tipo}`);
@@ -878,16 +877,28 @@
 
         function seleccionarExistenteDirecto(tipo, c) {
             const prefix = tipo === 'prop' ? '_prop' : '_comp';
-            document.getElementById(`input_buscar_${prefix}`).value = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
+            
+            // Asignar ID clave para vincular el cliente
             document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
+            
+            // Texto del buscador
+            let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
+            document.getElementById(`input_buscar_${prefix}`).value = display;
 
+            // Determinar Tipo de Persona (Física / Jurídica) y cambiar radio
             const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
             const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
             const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
             
-            if (esJuridica) { radioJuridica.checked = true; toggleTipoPersona(prefix, 'juridica'); } 
-            else { radioFisica.checked = true; toggleTipoPersona(prefix, 'fisica'); }
+            if (esJuridica) { 
+                radioJuridica.checked = true; 
+                toggleTipoPersona(prefix, 'juridica'); 
+            } else { 
+                radioFisica.checked = true; 
+                toggleTipoPersona(prefix, 'fisica'); 
+            }
 
+            // CARGAR TODOS LOS CAMPOS DE LA PARTE DE ABAJO
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
             document.getElementById('razon_social' + prefix).value = c.razon_social || '';
@@ -898,7 +909,6 @@
             document.getElementById('provincia' + prefix).value = c.provincia || '';
         }
 
-        // Ocultar resultados si se hace clic afuera
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.form-group')) {
                 document.querySelectorAll('.autocomplete-results').forEach(el => el.style.display = 'none');
