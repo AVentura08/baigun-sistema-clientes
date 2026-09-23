@@ -65,6 +65,11 @@
         label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
         input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
 
+        /* LISTA FLOTANTE DE RESULTADOS */
+        .autocomplete-box { position: absolute; top: 100%; left: 0; right: 0; z-index: 999; background: white; border: 2px solid var(--brand-blue); border-radius: 0 0 5px 5px; max-height: 150px; overflow-y: auto; box-shadow: 0 6px 12px rgba(0,0,0,0.2); display: none; }
+        .autocomplete-row { padding: 6px 8px; font-size: 10px; cursor: pointer; border-bottom: 1px solid #e2e8f0; color: var(--text-dark); background: white; }
+        .autocomplete-row:hover { background-color: #dbeafe; color: var(--brand-dark); font-weight: 700; }
+
         .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
         .checkbox-emp input { width: auto; cursor: pointer; }
 
@@ -275,14 +280,14 @@
                     </div>
 
                     <div class="grid-partes-paralelo">
-                        <!-- PROPIETARIO CON DATALIST INFALIBLE Y AUTOCOMPLETADO AUTOMÁTICO -->
+                        <!-- PROPIETARIO CON AUTOCOMPLETADO FLOTANTE DEFINITIVO -->
                         <div class="block-section">
                             <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
                             <div class="block-content">
                                 <div class="form-group">
                                     <label>🔍 Buscar Existente:</label>
-                                    <input type="text" id="input_buscar_prop" list="datalist_clientes_prop" placeholder="Escribir para buscar..." oninput="seleccionarClienteDatalist('prop')" onchange="seleccionarClienteDatalist('prop')" style="font-weight:600; color:var(--brand-blue);">
-                                    <datalist id="datalist_clientes_prop"></datalist>
+                                    <input type="text" id="input_buscar_prop" placeholder="Escribir nombre o CUIT..." oninput="filtrarListaFlotante('prop')" autocomplete="off" style="font-weight:700; color:var(--brand-blue);">
+                                    <div id="box_results_prop" class="autocomplete-box"></div>
                                 </div>
                                 <input type="hidden" id="id_prop_seleccionado">
                                 
@@ -315,7 +320,7 @@
                             </div>
                         </div>
 
-                        <!-- CONTRAPARTE CON DATALIST INFALIBLE Y AUTOCOMPLETADO AUTOMÁTICO -->
+                        <!-- CONTRAPARTE CON AUTOCOMPLETADO FLOTANTE DEFINITIVO -->
                         <div class="block-section">
                             <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
                             <div class="block-content">
@@ -330,8 +335,8 @@
                                     </div>
                                     <div class="form-group" style="flex:1.2;">
                                         <label>🔍 Buscar Existente:</label>
-                                        <input type="text" id="input_buscar_comp" list="datalist_clientes_comp" placeholder="Escribir para buscar..." oninput="seleccionarClienteDatalist('comp')" onchange="seleccionarClienteDatalist('comp')" style="font-weight:600; color:var(--brand-blue);">
-                                        <datalist id="datalist_clientes_comp"></datalist>
+                                        <input type="text" id="input_buscar_comp" placeholder="Escribir nombre o CUIT..." oninput="filtrarListaFlotante('comp')" autocomplete="off" style="font-weight:700; color:var(--brand-blue);">
+                                        <div id="box_results_comp" class="autocomplete-box"></div>
                                     </div>
                                 </div>
                                 <input type="hidden" id="id_comp_seleccionado">
@@ -832,71 +837,94 @@
             });
         }
 
-        // CARGA DE DATALIST Y AUTOCOMPLETADO DEFINITIVO DE CAMPOS
         async function cargarComboClientes() {
             const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
             listaClientesGlobal = data || [];
-
-            const dlProp = document.getElementById('datalist_clientes_prop');
-            const dlComp = document.getElementById('datalist_clientes_comp');
-            dlProp.innerHTML = '';
-            dlComp.innerHTML = '';
-
-            listaClientesGlobal.forEach(c => {
-                let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
-                let labelText = `${display} ${c.cuit_dni ? '[' + c.cuit_dni + ']' : ''}`;
-
-                const opt1 = document.createElement('option');
-                opt1.value = labelText;
-                dlProp.appendChild(opt1);
-
-                const opt2 = document.createElement('option');
-                opt2.value = labelText;
-                dlComp.appendChild(opt2);
-            });
         }
 
-        function seleccionarClienteDatalist(tipo) {
-            const prefix = tipo === 'prop' ? '_prop' : '_comp';
-            const valInput = document.getElementById(`input_buscar_${prefix}`).value.trim().toLowerCase();
+        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO DEFINITIVA (Manejo de Objeto Directo)
+        function filtrarListaFlotante(tipo) {
+            const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
+            const box = document.getElementById(`box_results_${tipo}`);
+            box.innerHTML = '';
 
-            if (!valInput) return;
-
-            // Buscar coincidencia en la memoria global de clientes
-            const c = listaClientesGlobal.find(item => {
-                let display = item.razon_social ? item.razon_social : (item.apellido ? `${item.apellido}, ${item.nombre || ''}` : item.nombre_razon_social);
-                let labelText = `${display} ${item.cuit_dni ? '[' + item.cuit_dni + ']' : ''}`;
-                return labelText.toLowerCase() === valInput || display.toLowerCase() === valInput || (item.cuit_dni && item.cuit_dni.toLowerCase() === valInput);
-            });
-
-            if (c) {
-                // 1. Asignar ID
-                document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
-
-                // 2. Determinar Tipo de Persona (Física vs Jurídica)
-                const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
-                const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
-                const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
-                
-                if (esJuridica) { 
-                    radioJuridica.checked = true; 
-                    toggleTipoPersona(prefix, 'juridica'); 
-                } else { 
-                    radioFisica.checked = true; 
-                    toggleTipoPersona(prefix, 'fisica'); 
-                }
-
-                // 3. AUTOCOMPLETADO FORZADO DE TODOS LOS CAMPOS
-                document.getElementById('nombre' + prefix).value = c.nombre || '';
-                document.getElementById('apellido' + prefix).value = c.apellido || '';
-                document.getElementById('razon_social' + prefix).value = c.razon_social || '';
-                document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
-                document.getElementById('contacto' + prefix).value = c.telefono || '';
-                document.getElementById('mail' + prefix).value = c.mail || '';
-                document.getElementById('direccion' + prefix).value = c.direccion || '';
-                document.getElementById('provincia' + prefix).value = c.provincia || '';
+            if (query.length === 0) {
+                box.style.display = 'none';
+                return;
             }
+
+            const coincidencia = listaClientesGlobal.filter(c => {
+                const nom = (c.nombre_razon_social || `${c.apellido || ''} ${c.nombre || ''} ${c.razon_social || ''}`).toLowerCase();
+                const cuit = (c.cuit_dni || '').toLowerCase();
+                return nom.includes(query) || cuit.includes(query);
+            });
+
+            if (coincidencia.length === 0) {
+                box.innerHTML = `<div class="autocomplete-row" style="color:#64748b; cursor:default;">No se encontraron coincidencias. Se cargará como nuevo.</div>`;
+                box.style.display = 'block';
+                return;
+            }
+
+            coincidencia.slice(0, 8).forEach(c => {
+                const row = document.createElement('div');
+                row.className = 'autocomplete-row';
+                let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
+                row.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
+                
+                // EVENTO MOUSEDOWN PARA EJECUCIÓN INMEDIATA SIN PERDER FOCO
+                row.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    ejecutarAutocompletadoDirecto(tipo, c);
+                    box.style.display = 'none';
+                });
+
+                box.appendChild(row);
+            });
+
+            box.style.display = 'block';
         }
+
+        function ejecutarAutocompletadoDirecto(tipo, c) {
+            const prefix = tipo === 'prop' ? '_prop' : '_comp';
+            
+            // 1. Asignar ID
+            document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
+
+            // 2. Colocar Nombre en el cuadro de búsqueda
+            let display = c.razon_social ? c.razon_social : `${c.apellido || ''}, ${c.nombre || ''}`.trim();
+            document.getElementById(`input_buscar_${prefix}`).value = display;
+
+            // 3. Seleccionar tipo de persona
+            const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
+            const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
+            const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
+            
+            if (esJuridica) { 
+                radioJuridica.checked = true; 
+                toggleTipoPersona(prefix, 'juridica'); 
+            } else { 
+                radioFisica.checked = true; 
+                toggleTipoPersona(prefix, 'fisica'); 
+            }
+
+            // 4. INYECCIÓN FORZADA EN LOS CAMPOS VISIBLES
+            document.getElementById('nombre' + prefix).value = c.nombre || '';
+            document.getElementById('apellido' + prefix).value = c.apellido || '';
+            document.getElementById('razon_social' + prefix).value = c.razon_social || '';
+            document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
+            document.getElementById('contacto' + prefix).value = c.telefono || '';
+            document.getElementById('mail' + prefix).value = c.mail || '';
+            document.getElementById('direccion' + prefix).value = c.direccion || '';
+            document.getElementById('provincia' + prefix).value = c.provincia || '';
+        }
+
+        // Cierra los desplegables flotantes al tocar en cualquier otra parte
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-group')) {
+                document.querySelectorAll('.autocomplete-box').forEach(el => el.style.display = 'none');
+            }
+        });
 
         function evaluarSectorElegido(op, sectorSel) {
             if (sectorSel === 'todos') return true;
