@@ -1,0 +1,1487 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baigun Realty - Sistema Clientes</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --brand-dark: #0b1a30;
+            --brand-blue: #1d4ed8;
+            --brand-hover: #1e40af;
+            --bg-body: #e9eff5;
+            --panel-bg: #f4f7fa;
+            --border-color: #cbd5e1;
+            --zebra-even: #eaeff5;
+            --text-dark: #1e293b;
+        }
+
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: var(--bg-body); color: var(--text-dark); }
+        body { display: flex; flex-direction: column; padding: 8px; box-sizing: border-box; }
+
+        #pantalla-login { max-width: 380px; margin: 60px auto; background: var(--panel-bg); padding: 25px; border-radius: 10px; border: 1px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        #pantalla-login img { height: 50px; width: 50px; border-radius: 8px; margin-bottom: 10px; }
+        #pantalla-login h2 { color: var(--brand-dark); margin-top: 0; font-size: 18px; margin-bottom: 15px; }
+
+        #pantalla-sistema { display: flex; flex-direction: column; height: 100%; }
+
+        .header-brand { display: flex; align-items: center; justify-content: space-between; background: var(--panel-bg); padding: 6px 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 8px; border: 1px solid var(--border-color); border-left: 5px solid var(--brand-dark); flex-shrink: 0; }
+        .header-brand-info { display: flex; align-items: center; gap: 10px; }
+        .header-brand img { height: 26px; width: 26px; border-radius: 5px; object-fit: cover; }
+        .header-brand h1 { color: var(--brand-dark); margin: 0; font-size: 16px; font-weight: 700; }
+
+        .nav-tabs { display: flex; gap: 6px; margin-left: 10px; }
+        .tab-btn { background: white; color: #334155; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 5px; font-weight: 600; font-size: 10px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: var(--brand-dark); color: white; border-color: var(--brand-dark); }
+
+        .user-tag { background: #e2e8f0; color: #334155; padding: 3px 6px; border-radius: 10px; font-size: 9px; font-weight: 700; margin-right: 6px; }
+        .btn-logout { background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 5px; font-weight: 600; font-size: 10px; cursor: pointer; width: auto; }
+
+        .container { display: flex; gap: 8px; flex: 1; min-height: 0; }
+        .panel-tabla { flex: 3; background: var(--panel-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.03); display: flex; flex-direction: column; min-height: 0; }
+        .panel-form { flex: 2.5; background: var(--panel-bg); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.03); display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+        
+        .filter-bar { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; background: #e2e8f0; padding: 6px 8px; border-radius: 5px; border: 1px solid #cbd5e1; flex-shrink: 0; }
+        .btn-filter-group { display: flex; gap: 2px; }
+        .btn-filter { background: white; color: #334155; border: 1px solid #cbd5e1; padding: 3px 6px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 9.5px; transition: all 0.2s; white-space: nowrap; }
+        .btn-filter.active { background: var(--brand-dark); color: white; border-color: var(--brand-dark); }
+
+        .table-scroll-container { flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 5px; background: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        th, td { border: 1px solid var(--border-color); padding: 4px 6px; text-align: left; }
+        th { position: sticky; top: 0; z-index: 2; background-color: var(--brand-dark); color: white; font-weight: 600; text-transform: uppercase; font-size: 9px; }
+        
+        tbody tr:nth-child(even) { background-color: var(--zebra-even); }
+        tbody tr:nth-child(odd) { background-color: #ffffff; }
+        tbody tr:hover { background-color: #dbeafe !important; cursor: pointer; }
+        tbody tr.selected { background-color: #bfdbfe !important; border-left: 3px solid var(--brand-blue); }
+
+        .form-group { margin-bottom: 4px; text-align: left; }
+        .form-row { display: flex; gap: 6px; }
+        .form-row .form-group { flex: 1; }
+        label { display: block; font-weight: 600; margin-bottom: 1px; font-size: 9px; color: #334155; text-transform: uppercase; }
+        input, select { width: 100%; padding: 3px 6px; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-size: 10px; }
+
+        .checkbox-emp { display: flex; align-items: center; gap: 6px; background: #e0f2fe; border: 1px solid #7dd3fc; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-weight: 700; color: #0369a1; font-size: 10px; }
+        .checkbox-emp input { width: auto; cursor: pointer; }
+
+        .radio-tipo { display: flex; gap: 10px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; }
+        .radio-tipo label { font-size: 9px; text-transform: none; margin: 0; cursor: pointer; display: flex; align-items: center; gap: 2px; }
+
+        .grid-partes-paralelo { display: flex; gap: 6px; }
+        .grid-partes-paralelo .block-section { flex: 1; margin-bottom: 0; }
+
+        .block-section { background: #ffffff; border: 1px solid var(--border-color); border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
+        .block-title { font-size: 10px; font-weight: 700; color: white; background: var(--brand-dark); padding: 3px 8px; }
+        .block-title.secondary { background: #1e3a8a; }
+        .block-title.tertiary { background: #047857; }
+        .block-content { padding: 6px; background: #fcfdfe; }
+
+        button.btn-submit { background-color: var(--brand-blue); color: white; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: 700; font-size: 11px; margin-top: 4px; }
+        .btn-danger { background-color: #ef4444; color: white; border: none; }
+        .btn-excel { background-color: #166534; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 10px; cursor: pointer; margin-left: auto; }
+
+        .badge { padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 700; text-align: center; display: inline-block; }
+        .badge-pendiente { background-color: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+        .badge-parcial { background-color: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+        .badge-completo { background-color: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+        .badge-part { background-color: #e2e8f0; color: #334155; font-weight: 600; padding: 1px 5px; border-radius: 3px; font-size: 9px; }
+        .badge-monto { background-color: #dcfce7; color: #15803d; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-size: 9px; }
+
+        .ceo-filter-panel { background: white; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); margin-bottom: 8px; flex-shrink: 0; }
+        .ceo-filter-layer { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 6px; }
+        .ceo-filter-layer:last-child { margin-bottom: 0; padding-top: 4px; border-top: 1px dashed var(--border-color); }
+
+        .kpi-grid-ceo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; flex-shrink: 0; }
+        .kpi-card-ceo { background: white; padding: 6px; border-radius: 5px; border: 1px solid var(--border-color); text-align: center; }
+        .kpi-card-ceo .value { font-size: 16px; font-weight: 800; color: var(--brand-dark); margin-top: 1px; }
+        .kpi-card-ceo .label { font-size: 8.5px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+
+        .ceo-split-container { display: flex; gap: 8px; flex: 1; min-height: 0; }
+        .ceo-left-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .ceo-right-panel { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+
+        .ceo-card-widget { background: white; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .ceo-card-widget h5 { margin: 0 0 6px 0; color: var(--brand-dark); font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* TABLA MATRIZ TOP 10 CON COLUMNAS ESTRATÉGICAS */
+        .top-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
+        .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; }
+        
+        .doble-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .chart-box { display: flex; flex-direction: column; align-items: center; }
+        .chart-box h6 { margin: 0 0 4px 0; font-size: 8.5px; color: var(--brand-dark); text-align: center; text-transform: uppercase; }
+        .chart-canvas-wrapper { width: 85px; height: 85px; }
+        .chart-leyenda { font-size: 8px; width: 100%; margin-top: 4px; }
+        .chart-leyenda-item { display: flex; justify-content: space-between; align-items: center; padding: 1px 0; border-bottom: 1px solid #f1f5f9; }
+    </style>
+</head>
+<body>
+
+    <div id="pantalla-login">
+        <img src="https://expofranquicias.ar/wp-content/uploads/2024/04/Logo-perfil-fondo-blue-768x768.png" alt="Baigun Logo">
+        <h2>Baigun Realty - Acceso</h2>
+        <form id="form-login">
+            <div class="form-group">
+                <label>Correo Electrónico:</label>
+                <input type="email" id="login_email" placeholder="usuario@baigunrealty.com" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <input type="password" id="login_password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-submit">🔒 Iniciar Sesión</button>
+        </form>
+    </div>
+
+    <div id="pantalla-sistema" style="display: none;">
+        <div class="header-brand">
+            <div class="header-brand-info">
+                <img src="https://expofranquicias.ar/wp-content/uploads/2024/04/Logo-perfil-fondo-blue-768x768.png" alt="Baigun Logo">
+                <h1>Baigun Realty - Sistema Clientes</h1>
+                
+                <div class="nav-tabs" id="admin-tabs" style="display: none;">
+                    <button class="tab-btn active" id="btn-tab-carga" onclick="cambiarVista('carga')">📝 Carga Operativa</button>
+                    <button class="tab-btn" id="btn-tab-ceo" onclick="cambiarVista('ceo')">📊 Control CEO</button>
+                </div>
+            </div>
+            <div>
+                <span id="user-display" class="user-tag"></span>
+                <button type="button" class="btn-logout" onclick="cerrarSesion()">Cerrar Sesión 🚪</button>
+            </div>
+        </div>
+
+        <!-- VISTA OPERATIVA -->
+        <div id="vista-operativa" class="container">
+            <div class="panel-tabla">
+                <div class="filter-bar">
+                    <div class="btn-filter-group">
+                        <button type="button" class="btn-filter active" onclick="filtrarEstado('Todos', this)">Todos</button>
+                        <button type="button" class="btn-filter" onclick="filtrarEstado('Pendiente', this)">🔴 Pendientes</button>
+                        <button type="button" class="btn-filter" onclick="filtrarEstado('Parcial', this)">🟡 Parciales</button>
+                        <button type="button" class="btn-filter" onclick="filtrarEstado('Completo', this)">🟢 Completos</button>
+                    </div>
+                    
+                    <select id="op_filtro_sector" onchange="renderizarTabla()" style="width: 140px; padding: 2px;">
+                        <option value="todos">Sector: Todos</option>
+                        <option value="res_usados">Residencial - Usados</option>
+                        <option value="res_emprendimientos">Residencial - Emprendimientos</option>
+                        <option value="comercial">Comercial</option>
+                        <option value="alquileres">Alquileres</option>
+                        <option value="terrenos">Terrenos</option>
+                        <option value="especiales">Negocios Especiales</option>
+                    </select>
+
+                    <div style="display:flex; gap:2px; align-items:center;">
+                        <select id="op_filtro_anio" onchange="renderizarTabla()" style="width: 75px; padding: 2px;">
+                            <option value="todos">Año: Todo</option>
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                        <select id="op_filtro_mes" onchange="renderizarTabla()" style="width: 85px; padding: 2px;">
+                            <option value="todos">Mes: Todos</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
+                    </div>
+
+                    <input type="text" id="input_buscar" placeholder="🔍 Buscar..." onkeyup="filtrarTexto()" style="width: 120px; margin-left: auto; padding: 2px 5px;">
+                </div>
+
+                <div class="table-scroll-container">
+                    <table id="tabla-operaciones">
+                        <thead>
+                            <tr>
+                                <th># Op.</th>
+                                <th>Fecha</th>
+                                <th>Sector + Tipo Ingreso</th>
+                                <th>Emprendimiento / Dirección</th>
+                                <th>Vendedor</th>
+                                <th>Valor Cierre</th>
+                                <th>Propietario(s)</th>
+                                <th>Comprador(es) / Inquilino(s)</th>
+                                <th>Estado Carga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="9" style="text-align:center; padding: 10px; color: #64748b;">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FORMULARIO DE CARGA OPERATIVA -->
+            <div class="panel-form">
+                <h5 style="margin-top:0; margin-bottom:6px; color: var(--brand-dark);">Carga / Edición de Partes y Emprendimientos</h5>
+                <form id="form-interviniente">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label># Operación Seleccionada:</label>
+                            <input type="text" id="id_operacion" readonly placeholder="Toca una fila" style="background:#e2e8f0; font-weight:bold; color: var(--brand-dark);">
+                        </div>
+                        <div class="form-group">
+                            <label>💰 Valor Cierre ($/USD):</label>
+                            <input type="number" step="0.01" id="monto_cierre_op" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div id="seccion-intervinientes-existentes" style="display:none; margin-bottom:4px;">
+                        <label>👥 Partes ya cargadas:</label>
+                        <div id="lista-intervinientes"></div>
+                    </div>
+
+                    <div class="checkbox-emp">
+                        <input type="checkbox" id="chk_es_emprendimiento" onchange="toggleSeccionEmprendimiento()">
+                        <label for="chk_es_emprendimiento">🏢 ¿Es un Emprendimiento / Proyecto?</label>
+                    </div>
+
+                    <div class="block-section" id="block_emprendimiento" style="display:none;">
+                        <div class="block-title tertiary">🏗️ DATOS DEL EMPRENDIMIENTO</div>
+                        <div class="block-content">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>🔍 Seleccionar Existente:</label>
+                                    <select id="select_emp_existente" onchange="seleccionarEmprendimientoExistente()">
+                                        <option value="">-- Cargar Nuevo o Seleccionar --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Nombre del Proyecto:</label>
+                                    <input type="text" id="emp_nombre" placeholder="Edificio Libertador 5100">
+                                </div>
+                            </div>
+                            <input type="hidden" id="id_emp_seleccionado">
+                            
+                            <div class="form-row">
+                                <div class="form-group"><label>Dirección:</label><input type="text" id="emp_direccion" placeholder="Av. del Libertador 5100"></div>
+                                <div class="form-group"><label>Desarrollador:</label><input type="text" id="emp_desarrollador" placeholder="Grupo B&B"></div>
+                                <div class="form-group"><label>Productor:</label><input type="text" id="emp_productor" placeholder="Productora Central"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid-partes-paralelo">
+                        <div class="block-section">
+                            <div class="block-title">🏠 PARTE 1: PROPIETARIO</div>
+                            <div class="block-content">
+                                <div class="form-group">
+                                    <select id="select_prop_existente" onchange="seleccionarExistente('prop')">
+                                        <option value="">-- Buscar o Cargar Nuevo --</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" id="id_prop_seleccionado">
+                                
+                                <div class="radio-tipo">
+                                    <label><input type="radio" name="tipo_persona_prop" value="fisica" checked onclick="toggleTipoPersona('prop', 'fisica')"> Física</label>
+                                    <label><input type="radio" name="tipo_persona_prop" value="juridica" onclick="toggleTipoPersona('prop', 'juridica')"> Jurídica</label>
+                                </div>
+
+                                <div id="div_prop_fisica" class="form-row">
+                                    <div class="form-group"><label>Nombre:</label><input type="text" id="nombre_prop" placeholder="Carlos"></div>
+                                    <div class="form-group"><label>Apellido:</label><input type="text" id="apellido_prop" placeholder="Gómez"></div>
+                                </div>
+
+                                <div id="div_prop_juridica" class="form-group" style="display:none;">
+                                    <label>Razón Social:</label>
+                                    <input type="text" id="razon_social_prop" placeholder="Gómez Inv S.A.">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group"><label>CUIT/DNI:</label><input type="text" id="cuit_prop" placeholder="20-12345678-9"></div>
+                                    <div class="form-group"><label>Teléfono:</label><input type="text" id="contacto_prop" placeholder="11-5566-7788"></div>
+                                </div>
+
+                                <div class="form-group"><label>Mail:</label><input type="email" id="mail_prop" placeholder="carlos@ejemplo.com"></div>
+
+                                <div class="form-row">
+                                    <div class="form-group"><label>Dirección:</label><input type="text" id="direccion_prop" placeholder="Cabildo 1234"></div>
+                                    <div class="form-group"><label>Provincia:</label><input type="text" id="provincia_prop" placeholder="Buenos Aires"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="block-section">
+                            <div class="block-title secondary">🔑 PARTE 2: COMPRADOR / INQ.</div>
+                            <div class="block-content">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <select id="rol_contraparte" style="font-weight:600;">
+                                            <option value="Comprador">Comprador</option>
+                                            <option value="Inquilino">Inquilino</option>
+                                            <option value="Inversor">Inversor</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <select id="select_comp_existente" onchange="seleccionarExistente('comp')">
+                                            <option value="">-- Buscar o Cargar --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="id_comp_seleccionado">
+                                
+                                <div class="radio-tipo">
+                                    <label><input type="radio" name="tipo_persona_comp" value="fisica" checked onclick="toggleTipoPersona('comp', 'fisica')"> Física</label>
+                                    <label><input type="radio" name="tipo_persona_comp" value="juridica" onclick="toggleTipoPersona('comp', 'juridica')"> Jurídica</label>
+                                </div>
+
+                                <div id="div_comp_fisica" class="form-row">
+                                    <div class="form-group"><label>Nombre:</label><input type="text" id="nombre_comp" placeholder="María"></div>
+                                    <div class="form-group"><label>Apellido:</label><input type="text" id="apellido_comp" placeholder="Rodríguez"></div>
+                                </div>
+
+                                <div id="div_comp_juridica" class="form-group" style="display:none;">
+                                    <label>Razón Social:</label>
+                                    <input type="text" id="razon_social_comp" placeholder="Desarrollos SRL">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group"><label>CUIT/DNI:</label><input type="text" id="cuit_comp" placeholder="27-87654321-0"></div>
+                                    <div class="form-group"><label>Teléfono:</label><input type="text" id="contacto_comp" placeholder="11-9988-7766"></div>
+                                </div>
+
+                                <div class="form-group"><label>Mail:</label><input type="email" id="mail_comp" placeholder="maria@ejemplo.com"></div>
+
+                                <div class="form-row">
+                                    <div class="form-group"><label>Dirección:</label><input type="text" id="direccion_comp" placeholder="Moldes 567"></div>
+                                    <div class="form-group"><label>Provincia:</label><input type="text" id="provincia_comp" placeholder="CABA"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">💾 Guardar Datos</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- VISTA CEO CON MATRIZ TOP 10 Y CAMPOS ESTRATÉGICOS -->
+        <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
+                <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn-filter" onclick="limpiarFiltrosCEO()" style="background:#e2e8f0; font-weight:700;">🧹 Limpiar Filtros</button>
+                    <button type="button" class="btn-excel" onclick="exportarExcelCEO()">📊 Exportar a Excel</button>
+                </div>
+            </div>
+
+            <div class="ceo-filter-panel">
+                <div class="ceo-filter-layer">
+                    <div style="font-weight:700; color:var(--brand-dark); font-size:10px; margin-right:6px;">📅 TEMPORALIDAD:</div>
+                    
+                    <div class="form-group" style="margin:0; width: 120px;">
+                        <label>Año:</label>
+                        <select id="ceo_filtro_anio" onchange="actualizarCascadaCEO()">
+                            <option value="todos">Todos los Años</option>
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; width: 180px;">
+                        <label>Mes / Quarter:</label>
+                        <select id="ceo_filtro_mes" onchange="actualizarCascadaCEO()">
+                            <option value="todos">Todos los Meses</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                            <option value="q1">Q1 (Ene-Mar)</option>
+                            <option value="q2">Q2 (Abr-Jun)</option>
+                            <option value="q3">Q3 (Jul-Sep)</option>
+                            <option value="q4">Q4 (Oct-Dic)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; flex:1.5;">
+                        <label>🔍 Buscar Interviniente / Firmante Específico:</label>
+                        <input type="text" id="ceo_filtro_interviniente" placeholder="Escribir nombre o firma para ver su historial..." onkeyup="aplicarFiltrosCEO()">
+                    </div>
+                </div>
+
+                <div class="ceo-filter-layer">
+                    <div style="font-weight:700; color:var(--brand-dark); font-size:10px; margin-right:6px;">🎯 SEGMENTACIÓN:</div>
+
+                    <div class="form-group" style="margin:0; flex:1.2;">
+                        <label>Sector / Tipo:</label>
+                        <select id="ceo_filtro_sector" onchange="actualizarCascadaCEO()">
+                            <option value="todos">-- Todos --</option>
+                            <option value="res_emprendimientos">Residencial - Emprendimientos</option>
+                            <option value="res_usados">Residencial - Usados</option>
+                            <option value="comercial">Comercial</option>
+                            <option value="alquileres">Alquileres</option>
+                            <option value="terrenos">Terrenos</option>
+                            <option value="especiales">Especiales</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; flex:1.2;">
+                        <label>Origen:</label>
+                        <select id="ceo_filtro_origen_inmueble" onchange="actualizarCascadaCEO()">
+                            <option value="todos">Todos</option>
+                            <option value="solo_emp">Solo Emprendimientos</option>
+                            <option value="solo_ind">Solo Usados / Indiv.</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; flex:1.4;">
+                        <label>🏢 Emprendimiento Oficial:</label>
+                        <select id="ceo_filtro_emprendimiento" onchange="aplicarFiltrosCEO()" style="font-weight:bold; color:var(--brand-dark);">
+                            <option value="todos">-- Todos los Proyectos --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; flex:1.4;">
+                        <label>📍 Dirección Individual:</label>
+                        <select id="ceo_filtro_inmueble_individual" onchange="aplicarFiltrosCEO()">
+                            <option value="todos">-- Todas las Direcciones --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin:0; flex:1;">
+                        <label>🧑‍💼 Agente:</label>
+                        <select id="ceo_filtro_vendedor" onchange="aplicarFiltrosCEO()">
+                            <option value="todos">-- Todos --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="kpi-grid-ceo">
+                <div class="kpi-card-ceo">
+                    <div class="label">Ops. Filtradas</div>
+                    <div class="value" id="ceo_kpi_total">0</div>
+                </div>
+                <div class="kpi-card-ceo">
+                    <div class="label">Monto Total Acumulado</div>
+                    <div class="value" style="color:#15803d;" id="ceo_kpi_monto">$0</div>
+                </div>
+                <div class="kpi-card-ceo">
+                    <div class="label">Propietarios Únicos</div>
+                    <div class="value" style="color:#1d4ed8;" id="ceo_kpi_props">0</div>
+                </div>
+                <div class="kpi-card-ceo">
+                    <div class="label">Compradores / Inq. Únicos</div>
+                    <div class="value" style="color:#8b5cf6;" id="ceo_kpi_comps">0</div>
+                </div>
+            </div>
+
+            <!-- SPLIT CONTAINER -->
+            <div class="ceo-split-container">
+                <div class="ceo-left-panel">
+                    <div class="table-scroll-container">
+                        <table id="tabla-ceo-operaciones">
+                            <thead>
+                                <tr>
+                                    <th># Op.</th>
+                                    <th>Fecha</th>
+                                    <th>Emprendimiento / Dirección</th>
+                                    <th>Valor Cierre</th>
+                                    <th>Propietario(s)</th>
+                                    <th>Comprador(es) / Inquilino(s)</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ceo-right-panel">
+                    <!-- WIDGET MATRIZ TOP 10 COMPRADORES / INVERSORES -->
+                    <div class="ceo-card-widget" style="flex:1; display:flex; flex-direction:column;">
+                        <h5>
+                            <span>🏆 MATRIZ TOP 10 COMPRADORES / INVERSORES</span>
+                            <span style="font-size:8.5px; color:#64748b; font-weight:normal;">Perfil, Frecuencia y Concentración</span>
+                        </h5>
+                        <div style="overflow-y:auto; flex:1;">
+                            <table class="top-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20px; text-align:center;">#</th>
+                                        <th>Interviniente / Firma</th>
+                                        <th style="text-align:center; width:65px;">Tipo Persona</th>
+                                        <th style="text-align:center; width:45px;">Ops (#)</th>
+                                        <th style="text-align:center; width:100px;">Roles Históricos</th>
+                                        <th>Emprendimiento / Activo Clave</th>
+                                        <th style="text-align:center; width:65px;">Última Op.</th>
+                                        <th style="text-align:right; width:95px;">Suma Cierre ($)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="top_compradores_tbody">
+                                    <tr><td colspan="8" style="text-align:center; color:#64748b; padding:10px;">Sin compradores en esta selección.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- WIDGET DOBLE GRÁFICO DE SECTORES -->
+                    <div class="ceo-card-widget" style="height:145px; flex-shrink:0;">
+                        <h5>
+                            <span>🏢 Distribución por Sector</span>
+                            <span style="font-size:8.5px; color:#64748b; font-weight:normal;">Cantidad de Ops vs. Suma $ Cierre</span>
+                        </h5>
+                        <div class="doble-chart-grid">
+                            <div class="chart-box">
+                                <h6>Ops. Concretadas (#)</h6>
+                                <div class="chart-canvas-wrapper"><canvas id="chartSectoresCantCEO"></canvas></div>
+                                <div id="leyenda_cant_ceo" class="chart-leyenda"></div>
+                            </div>
+
+                            <div class="chart-box">
+                                <h6>Suma Valor Cierre ($)</h6>
+                                <div class="chart-canvas-wrapper"><canvas id="chartSectoresMontoCEO"></canvas></div>
+                                <div id="leyenda_monto_ceo" class="chart-leyenda"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://xvuyzjwnixbvavbvmzct.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2dXl6anduaXhidmF2YnZtemN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY3MTIxNDUsImV4cCI6MjEwMjI4ODE0NX0.vUFy8IvWRyrn6t0360WHKRurnIxaykwdDcOePBTOjnU';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let listaClientesGlobal = [];
+        let listaOperacionesGlobal = [];
+        let listaEmprendimientosGlobal = [];
+        let datosExportarCEO = [];
+        let estadoFiltroActual = 'Todos';
+        let rolUsuarioActual = 'operador';
+        
+        let chartCantInstance = null;
+        let chartMontoInstance = null;
+
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login_email').value;
+            const password = document.getElementById('login_password').value;
+
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+            if (error) { alert('Error de inicio de sesión: ' + error.message); } 
+            else { verificarSesion(); }
+        });
+
+        async function verificarSesion() {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session) {
+                document.getElementById('pantalla-login').style.display = 'none';
+                document.getElementById('pantalla-sistema').style.display = 'flex';
+
+                const { data: perfil } = await _supabase
+                    .from('profiles')
+                    .select('rol, nombre')
+                    .eq('id', session.user.id)
+                    .single();
+
+                rolUsuarioActual = perfil?.rol || 'operador';
+                const nombreMostrar = perfil?.nombre || session.user.email;
+                document.getElementById('user-display').textContent = `${nombreMostrar} (${rolUsuarioActual.toUpperCase()})`;
+
+                const adminTabs = document.getElementById('admin-tabs');
+                if (rolUsuarioActual === 'admin') {
+                    adminTabs.style.display = 'flex';
+                    cambiarVista('carga');
+                } else if (rolUsuarioActual === 'ejecutivo') {
+                    adminTabs.style.display = 'none';
+                    cambiarVista('ceo');
+                } else {
+                    adminTabs.style.display = 'none';
+                    cambiarVista('carga');
+                }
+
+                inicializar();
+            } else {
+                document.getElementById('pantalla-login').style.display = 'block';
+                document.getElementById('pantalla-sistema').style.display = 'none';
+            }
+        }
+
+        async function cerrarSesion() {
+            try { await _supabase.auth.signOut(); } catch (err) {} 
+            finally { localStorage.clear(); window.location.reload(); }
+        }
+
+        function cambiarVista(vista) {
+            const vistaOperativa = document.getElementById('vista-operativa');
+            const vistaEjecutiva = document.getElementById('vista-ejecutiva');
+            const btnCarga = document.getElementById('btn-tab-carga');
+            const btnCeo = document.getElementById('btn-tab-ceo');
+
+            if (vista === 'ceo') {
+                vistaOperativa.style.display = 'none';
+                vistaEjecutiva.style.display = 'flex';
+                vistaEjecutiva.style.flexDirection = 'column';
+                if (btnCarga && btnCeo) { btnCarga.classList.remove('active'); btnCeo.classList.add('active'); }
+                actualizarCascadaCEO();
+            } else {
+                vistaOperativa.style.display = 'flex';
+                vistaEjecutiva.style.display = 'none';
+                if (btnCarga && btnCeo) { btnCarga.classList.add('active'); btnCeo.classList.remove('active'); }
+            }
+        }
+
+        function toggleTipoPersona(prefix, tipo) {
+            const divFisica = document.getElementById(`div_${prefix}_fisica`);
+            const divJuridica = document.getElementById(`div_${prefix}_juridica`);
+
+            if (tipo === 'fisica') {
+                divFisica.style.display = 'flex';
+                divJuridica.style.display = 'none';
+            } else {
+                divFisica.style.display = 'none';
+                divJuridica.style.display = 'block';
+            }
+        }
+
+        function toggleSeccionEmprendimiento() {
+            const esEmp = document.getElementById('chk_es_emprendimiento').checked;
+            const block = document.getElementById('block_emprendimiento');
+            block.style.display = esEmp ? 'block' : 'none';
+        }
+
+        async function cargarEmprendimientos() {
+            const { data } = await _supabase.from('emprendimientos').select('*').order('nombre_emprendimiento', { ascending: true });
+            listaEmprendimientosGlobal = data || [];
+
+            const select = document.getElementById('select_emp_existente');
+            select.innerHTML = '<option value="">-- Cargar Nuevo o Seleccionar --</option>';
+            listaEmprendimientosGlobal.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id_emprendimiento;
+                opt.textContent = `🏗️ ${e.nombre_emprendimiento} (${e.direccion || 'Sin Dirección'})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function seleccionarEmprendimientoExistente() {
+            const idSel = document.getElementById('select_emp_existente').value;
+            if (!idSel) {
+                document.getElementById('id_emp_seleccionado').value = '';
+                document.getElementById('emp_nombre').value = '';
+                document.getElementById('emp_direccion').value = '';
+                document.getElementById('emp_desarrollador').value = '';
+                document.getElementById('emp_productor').value = '';
+                return;
+            }
+
+            const emp = listaEmprendimientosGlobal.find(e => e.id_emprendimiento == idSel);
+            if (emp) {
+                document.getElementById('id_emp_seleccionado').value = emp.id_emprendimiento;
+                document.getElementById('emp_nombre').value = emp.nombre_emprendimiento || '';
+                document.getElementById('emp_direccion').value = emp.direccion || '';
+                document.getElementById('emp_desarrollador').value = emp.desarrollador || '';
+                document.getElementById('emp_productor').value = emp.productor || '';
+            }
+        }
+
+        async function cargarOperaciones() {
+            const { data: operaciones, error } = await _supabase.from('operaciones').select('*, emprendimientos(*)');
+            if (error) return;
+
+            const { data: vinculos } = await _supabase
+                .from('operaciones_intervinientes')
+                .select('id_operacion, rol, id_cliente, clientes(*)');
+
+            const mapaIntervinientes = {};
+            const mapaCompletitud = {};
+            const mapaDetalleClientes = {};
+
+            if (vinculos) {
+                vinculos.forEach(v => {
+                    const idOp = v.id_operacion;
+                    const rol = v.rol;
+                    const c = v.clientes;
+
+                    if (!mapaCompletitud[idOp]) mapaCompletitud[idOp] = { hasProp: false, hasComp: false, propValid: false, compValid: false };
+
+                    let etiquetaCliente = '';
+                    let esValido = false;
+
+                    if (c) {
+                        const tieneIdentificacion = Boolean(c.cuit_dni && c.cuit_dni.trim());
+                        const tieneContacto = Boolean(c.telefono || c.mail);
+
+                        if (c.razon_social) {
+                            etiquetaCliente = c.razon_social;
+                            esValido = tieneIdentificacion && tieneContacto;
+                        } else if (c.apellido || c.nombre) {
+                            etiquetaCliente = `${c.apellido || ''}, ${c.nombre || ''}`.trim();
+                            esValido = tieneIdentificacion && tieneContacto;
+                        } else if (c.nombre_razon_social) {
+                            etiquetaCliente = c.nombre_razon_social;
+                            esValido = tieneIdentificacion && tieneContacto;
+                        }
+                    }
+
+                    if (rol === 'Propietario') {
+                        mapaCompletitud[idOp].hasProp = true;
+                        if (esValido) mapaCompletitud[idOp].propValid = true;
+                    } else {
+                        mapaCompletitud[idOp].hasComp = true;
+                        if (esValido) mapaCompletitud[idOp].compValid = true;
+                    }
+
+                    if (etiquetaCliente) {
+                        if (!mapaIntervinientes[idOp]) mapaIntervinientes[idOp] = {};
+                        if (!mapaIntervinientes[idOp][rol]) mapaIntervinientes[idOp][rol] = [];
+                        mapaIntervinientes[idOp][rol].push(etiquetaCliente);
+
+                        if (!mapaDetalleClientes[idOp]) mapaDetalleClientes[idOp] = [];
+                        mapaDetalleClientes[idOp].push({ rol, cliente: c, nombreMostrar: etiquetaCliente });
+                    }
+                });
+            }
+
+            listaOperacionesGlobal = operaciones.map(op => {
+                const arrProp = mapaIntervinientes[op['#']]?.['Propietario'] || [];
+                const arrComp = [
+                    ...(mapaIntervinientes[op['#']]?.['Comprador'] || []),
+                    ...(mapaIntervinientes[op['#']]?.['Inquilino'] || []),
+                    ...(mapaIntervinientes[op['#']]?.['Inversor'] || [])
+                ];
+                
+                const propText = arrProp.length > 0 ? arrProp.join(', ') : '-';
+                const compText = arrComp.length > 0 ? arrComp.join(', ') : '-';
+
+                const compData = mapaCompletitud[op['#']] || { hasProp: false, hasComp: false, propValid: false, compValid: false };
+                let estadoCalculado = 'Pendiente';
+
+                if (compData.hasProp && compData.hasComp) {
+                    if (compData.propValid && compData.compValid) {
+                        estadoCalculado = 'Completo';
+                    } else {
+                        estadoCalculado = 'Parcial';
+                    }
+                } else if (compData.hasProp || compData.hasComp) {
+                    estadoCalculado = 'Parcial';
+                }
+
+                const sectorVal = (op['SECTOR'] || op['Sector'] || op['sector'] || '').toString().trim();
+                const tipoIngresoVal = (op['Tipo de Ingreso'] || op['TIPO DE INGRESO'] || op['Tipo de ingreso'] || op['tipo_de_ingreso'] || '').toString().trim();
+
+                let sectorEtiqueta = '-';
+                if (sectorVal && tipoIngresoVal) sectorEtiqueta = `${sectorVal} - ${tipoIngresoVal}`;
+                else if (sectorVal) sectorEtiqueta = sectorVal;
+                else if (tipoIngresoVal) sectorEtiqueta = tipoIngresoVal;
+
+                const vendedorVal = op['Vendedor'] || op['VENDEDOR'] || op['Asesor'] || op['ASESOR'] || '-';
+                const valorCierreVal = op['valor_cierre'] !== null && op['valor_cierre'] !== undefined ? op['valor_cierre'] : null;
+
+                const esEmp = Boolean(op.es_emprendimiento || op.id_emprendimiento);
+                const emp = op.emprendimientos;
+                const nombreEmprendimientoOficial = emp?.nombre_emprendimiento || null;
+                const direccionIndividual = op['Nombre'] || op['Emprendimiento'] || 'Sin Dirección';
+                const nombreMostrar = nombreEmprendimientoOficial || direccionIndividual;
+
+                let anioOp = '';
+                let mesOp = '';
+                if (op['Fecha']) {
+                    const partes = op['Fecha'].split('/');
+                    if (partes.length === 3) {
+                        mesOp = parseInt(partes[1], 10).toString();
+                        let a = partes[2].trim();
+                        anioOp = a.length === 2 ? '20' + a : a;
+                    }
+                }
+
+                const clientesDetalle = mapaDetalleClientes[op['#']] || [];
+
+                return { ...op, propText, compText, estadoCalculado, anioOp, mesOp, sectorVal, tipoIngresoVal, sectorEtiqueta, vendedorVal, valorCierreVal, esEmp, nombreEmprendimientoOficial, direccionIndividual, nombreMostrar, empData: emp, clientesDetalle };
+            });
+
+            poblarAgentesCEO();
+            renderizarTabla();
+            actualizarCascadaCEO();
+        }
+
+        function poblarAgentesCEO() {
+            const select = document.getElementById('ceo_filtro_vendedor');
+            select.innerHTML = '<option value="todos">-- Todos --</option>';
+
+            const agentes = new Set();
+            listaOperacionesGlobal.forEach(op => {
+                if (op.vendedorVal && op.vendedorVal !== '-') agentes.add(op.vendedorVal.trim());
+            });
+
+            Array.from(agentes).sort().forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = `🧑‍💼 ${a}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function evaluarSectorElegido(op, sectorSel) {
+            if (sectorSel === 'todos') return true;
+            const sec = op.sectorVal.toLowerCase();
+            const tipo = op.tipoIngresoVal.toLowerCase();
+
+            if (sectorSel === 'res_usados') return tipo.includes('usad') || (sec.includes('residencial') && tipo.includes('usad'));
+            if (sectorSel === 'res_emprendimientos') return tipo.includes('emprendimiento') || tipo.includes('desarrollo') || (sec.includes('residencial') && tipo.includes('emprendimiento'));
+            if (sectorSel === 'comercial') return sec.includes('comercial') || tipo.includes('local') || tipo.includes('oficina');
+            if (sectorSel === 'alquileres') return sec.includes('alquiler') || tipo.includes('alquiler');
+            if (sectorSel === 'terrenos') return sec.includes('terreno') || tipo.includes('terreno') || tipo.includes('lote');
+            if (sectorSel === 'especiales') return sec.includes('especial') || tipo.includes('especial');
+            return true;
+        }
+
+        function actualizarCascadaCEO() {
+            const anioSel = document.getElementById('ceo_filtro_anio').value;
+            const mesSel = document.getElementById('ceo_filtro_mes').value;
+            const sectorSel = document.getElementById('ceo_filtro_sector').value;
+            const origenSel = document.getElementById('ceo_filtro_origen_inmueble').value;
+
+            const opsPremilinares = listaOperacionesGlobal.filter(op => {
+                const cumpleAnio = (anioSel === 'todos') || (op.anioOp === anioSel);
+                let cumpleMes = true;
+                if (mesSel !== 'todos') {
+                    if (mesSel === 'q1') cumpleMes = ['1', '2', '3'].includes(op.mesOp);
+                    else if (mesSel === 'q2') cumpleMes = ['4', '5', '6'].includes(op.mesOp);
+                    else if (mesSel === 'q3') cumpleMes = ['7', '8', '9'].includes(op.mesOp);
+                    else if (mesSel === 'q4') cumpleMes = ['10', '11', '12'].includes(op.mesOp);
+                    else cumpleMes = (op.mesOp === mesSel);
+                }
+                const cumpleSector = evaluarSectorElegido(op, sectorSel);
+                
+                let cumpleOrigen = true;
+                if (origenSel === 'solo_emp') cumpleOrigen = op.esEmp;
+                if (origenSel === 'solo_ind') cumpleOrigen = !op.esEmp;
+
+                return cumpleAnio && cumpleMes && cumpleSector && cumpleOrigen;
+            });
+
+            const selectEmp = document.getElementById('ceo_filtro_emprendimiento');
+            const valorEmpActual = selectEmp.value;
+            selectEmp.innerHTML = '<option value="todos">-- Todos los Emprendimientos --</option>';
+
+            const emprendimientosOficiales = new Set();
+            opsPremilinares.forEach(op => {
+                if (op.esEmp && op.nombreEmprendimientoOficial) {
+                    emprendimientosOficiales.add(op.nombreEmprendimientoOficial);
+                }
+            });
+
+            Array.from(emprendimientosOficiales).sort().forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = `🏗️ ${p}`;
+                selectEmp.appendChild(opt);
+            });
+            if (emprendimientosOficiales.has(valorEmpActual)) selectEmp.value = valorEmpActual;
+
+            const selectInd = document.getElementById('ceo_filtro_inmueble_individual');
+            const valorIndActual = selectInd.value;
+            selectInd.innerHTML = '<option value="todos">-- Todas las Direcciones --</option>';
+
+            const inmueblesIndividuales = new Set();
+            opsPremilinares.forEach(op => {
+                if (!op.esEmp && op.direccionIndividual) {
+                    inmueblesIndividuales.add(op.direccionIndividual);
+                }
+            });
+
+            Array.from(inmueblesIndividuales).sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = `📍 ${d}`;
+                selectInd.appendChild(opt);
+            });
+            if (inmueblesIndividuales.has(valorIndActual)) selectInd.value = valorIndActual;
+
+            aplicarFiltrosCEO();
+        }
+
+        function limpiarFiltrosCEO() {
+            document.getElementById('ceo_filtro_anio').value = 'todos';
+            document.getElementById('ceo_filtro_mes').value = 'todos';
+            document.getElementById('ceo_filtro_sector').value = 'todos';
+            document.getElementById('ceo_filtro_origen_inmueble').value = 'todos';
+            document.getElementById('ceo_filtro_emprendimiento').value = 'todos';
+            document.getElementById('ceo_filtro_inmueble_individual').value = 'todos';
+            document.getElementById('ceo_filtro_vendedor').value = 'todos';
+            document.getElementById('ceo_filtro_interviniente').value = '';
+            actualizarCascadaCEO();
+        }
+
+        function filtrarDirectoInterviniente(nombre) {
+            limpiarFiltrosCEO();
+            document.getElementById('ceo_filtro_interviniente').value = nombre;
+            aplicarFiltrosCEO();
+        }
+
+        function aplicarFiltrosCEO() {
+            const anioSel = document.getElementById('ceo_filtro_anio').value;
+            const mesSel = document.getElementById('ceo_filtro_mes').value;
+            const sectorSel = document.getElementById('ceo_filtro_sector').value;
+            const origenSel = document.getElementById('ceo_filtro_origen_inmueble').value;
+            const empSel = document.getElementById('ceo_filtro_emprendimiento').value;
+            const indSel = document.getElementById('ceo_filtro_inmueble_individual').value;
+            const vendSel = document.getElementById('ceo_filtro_vendedor').value;
+            const intervinienteBuscado = document.getElementById('ceo_filtro_interviniente').value.toLowerCase().trim();
+
+            const operacionesFiltradas = listaOperacionesGlobal.filter(op => {
+                const cumpleAnio = (anioSel === 'todos') || (op.anioOp === anioSel);
+                let cumpleMes = true;
+                if (mesSel !== 'todos') {
+                    if (mesSel === 'q1') cumpleMes = ['1', '2', '3'].includes(op.mesOp);
+                    else if (mesSel === 'q2') cumpleMes = ['4', '5', '6'].includes(op.mesOp);
+                    else if (mesSel === 'q3') cumpleMes = ['7', '8', '9'].includes(op.mesOp);
+                    else if (mesSel === 'q4') cumpleMes = ['10', '11', '12'].includes(op.mesOp);
+                    else cumpleMes = (op.mesOp === mesSel);
+                }
+                const cumpleSector = evaluarSectorElegido(op, sectorSel);
+                
+                let cumpleOrigen = true;
+                if (origenSel === 'solo_emp') cumpleOrigen = op.esEmp;
+                if (origenSel === 'solo_ind') cumpleOrigen = !op.esEmp;
+
+                const cumpleEmp = (empSel === 'todos') || (op.esEmp && op.nombreEmprendimientoOficial === empSel);
+                const cumpleInd = (indSel === 'todos') || (!op.esEmp && op.direccionIndividual === indSel);
+                const cumpleVend = (vendSel === 'todos') || op.vendedorVal === vendSel;
+
+                let cumpleInterviniente = true;
+                if (intervinienteBuscado) {
+                    const matchProp = op.propText.toLowerCase().includes(intervinienteBuscado);
+                    const matchComp = op.compText.toLowerCase().includes(intervinienteBuscado);
+                    cumpleInterviniente = matchProp || matchComp;
+                }
+
+                return cumpleAnio && cumpleMes && cumpleSector && cumpleOrigen && cumpleEmp && cumpleInd && cumpleVend && cumpleInterviniente;
+            });
+
+            const tbody = document.querySelector('#tabla-ceo-operaciones tbody');
+            tbody.innerHTML = '';
+            datosExportarCEO = [];
+
+            const mapaTopCompradores = {};
+            const conteoSectoresCant = {};
+            const conteoSectoresMonto = {};
+
+            if (operacionesFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
+            } else {
+                let montoAcumulado = 0;
+
+                operacionesFiltradas.forEach(op => {
+                    const tr = document.createElement('tr');
+                    let badgeClass = 'badge-pendiente';
+                    if (op.estadoCalculado === 'Parcial') badgeClass = 'badge-parcial';
+                    if (op.estadoCalculado === 'Completo') badgeClass = 'badge-completo';
+
+                    const valorNum = (op.valorCierreVal !== null && op.valorCierreVal !== undefined) ? parseFloat(op.valorCierreVal) : 0;
+                    const valorFormateado = (op.valorCierreVal !== null && op.valorCierreVal !== undefined) ? `$ ${valorNum.toLocaleString('es-AR')}` : '-';
+                    if (valorNum > 0) montoAcumulado += valorNum;
+
+                    // Agrupar Sectores
+                    const secNombre = op.sectorVal || 'Otros';
+                    conteoSectoresCant[secNombre] = (conteoSectoresCant[secNombre] || 0) + 1;
+                    conteoSectoresMonto[secNombre] = (conteoSectoresMonto[secNombre] || 0) + valorNum;
+
+                    // Agrupar Compradores para Matriz TOP 10
+                    op.clientesDetalle.forEach(det => {
+                        if (det.rol !== 'Propietario') {
+                            const nom = det.nombreMostrar;
+                            if (nom && nom !== '-') {
+                                if (!mapaTopCompradores[nom]) {
+                                    mapaTopCompradores[nom] = {
+                                        nombre: nom,
+                                        esJuridica: det.cliente?.es_persona_juridica || Boolean(det.cliente?.razon_social),
+                                        ops: 0,
+                                        monto: 0,
+                                        rolesMap: {},
+                                        proyectosMap: {},
+                                        ultimaFecha: op['Fecha'] || '-'
+                                    };
+                                }
+                                mapaTopCompradores[nom].ops++;
+                                if (valorNum > 0) mapaTopCompradores[nom].monto += valorNum;
+
+                                // Conteo de Roles Históricos
+                                mapaTopCompradores[nom].rolesMap[det.rol] = (mapaTopCompradores[nom].rolesMap[det.rol] || 0) + 1;
+
+                                // Conteo de Proyectos
+                                const proj = op.nombreMostrar;
+                                if (!mapaTopCompradores[nom].proyectosMap[proj]) mapaTopCompradores[nom].proyectosMap[proj] = 0;
+                                mapaTopCompradores[nom].proyectosMap[proj] += (valorNum > 0 ? valorNum : 1);
+                            }
+                        }
+                    });
+
+                    tr.innerHTML = `
+                        <td><strong>${op['#'] || ''}</strong></td>
+                        <td>${op['Fecha'] || ''}</td>
+                        <td><strong>${op.nombreMostrar}</strong></td>
+                        <td><span class="${op.valorCierreVal ? 'badge-monto' : ''}">${valorFormateado}</span></td>
+                        <td><a href="#" onclick="filtrarDirectoInterviniente('${op.propText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.propText}</a></td>
+                        <td><a href="#" onclick="filtrarDirectoInterviniente('${op.compText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.compText}</a></td>
+                        <td><span class="badge ${badgeClass}">${op.estadoCalculado}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    datosExportarCEO.push({
+                        "# Operación": op['#'] || '',
+                        "Fecha": op['Fecha'] || '',
+                        "Origen": op.esEmp ? 'Emprendimiento' : 'Individual / Usado',
+                        "Sector": op.sectorVal,
+                        "Tipo Ingreso": op.tipoIngresoVal,
+                        "Emprendimiento Oficial": op.nombreEmprendimientoOficial || '-',
+                        "Dirección Inmueble": op.direccionIndividual || '',
+                        "Desarrollador": op.empData?.desarrollador || '-',
+                        "Productor": op.empData?.productor || '-',
+                        "Vendedor / Asesor": op.vendedorVal,
+                        "Valor Cierre": op.valorCierreVal || '-',
+                        "Propietarios": op.propText,
+                        "Compradores / Inquilinos": op.compText,
+                        "Estado Carga": op.estadoCalculado
+                    });
+                });
+
+                document.getElementById('ceo_kpi_monto').textContent = `$ ${montoAcumulado.toLocaleString('es-AR')}`;
+            }
+
+            const propsContados = new Set(operacionesFiltradas.map(o => o.propText).filter(p => p !== '-')).size;
+            const compsContados = new Set(operacionesFiltradas.map(o => o.compText).filter(c => c !== '-')).size;
+
+            document.getElementById('ceo_kpi_total').textContent = operacionesFiltradas.length;
+            document.getElementById('ceo_kpi_props').textContent = propsContados;
+            document.getElementById('ceo_kpi_comps').textContent = compsContados;
+
+            renderizarTop10Compradores(mapaTopCompradores);
+            renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
+        }
+
+        function renderizarTop10Compradores(mapaTop) {
+            const tbody = document.getElementById('top_compradores_tbody');
+            tbody.innerHTML = '';
+
+            const listaTop = Object.values(mapaTop)
+                .sort((a, b) => b.ops - a.ops || b.monto - a.monto)
+                .slice(0, 10);
+
+            if (listaTop.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#64748b; padding:10px;">Sin compradores en esta selección.</td></tr>`;
+                return;
+            }
+
+            listaTop.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const montoTxt = item.monto > 0 ? `$ ${item.monto.toLocaleString('es-AR')}` : '-';
+
+                // Formatear Roles Históricos
+                const rolesTxt = Object.keys(item.rolesMap)
+                    .map(r => `${item.rolesMap[r]} ${r.substring(0,4)}`)
+                    .join(' / ');
+
+                // Proyecto Clave
+                let proyectoClave = '-';
+                let maxVal = -1;
+                Object.keys(item.proyectosMap).forEach(p => {
+                    if (item.proyectosMap[p] > maxVal) {
+                        maxVal = item.proyectosMap[p];
+                        proyectoClave = p;
+                    }
+                });
+
+                const tipoPersonaTxt = item.esJuridica ? 'Jurídica' : 'Física';
+
+                tr.innerHTML = `
+                    <td style="font-weight:800; color:#64748b; text-align:center;">#${index + 1}</td>
+                    <td><a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a></td>
+                    <td style="text-align:center;"><span class="badge-part">${tipoPersonaTxt}</span></td>
+                    <td style="text-align:center;"><span class="badge-part" style="background:#dbeafe; color:#1e40af; font-weight:800;">${item.ops}</span></td>
+                    <td style="text-align:center; font-size:8px; color:#475569;">${rolesTxt}</td>
+                    <td style="font-weight:600; color:#0369a1;">${proyectoClave}</td>
+                    <td style="text-align:center; font-size:8.5px;">${item.ultimaFecha}</td>
+                    <td style="text-align:right; font-weight:700; color:#166534;">${montoTxt}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto) {
+            const labels = Object.keys(conteoSectoresCant);
+            const dataCant = Object.values(conteoSectoresCant);
+            const dataMonto = labels.map(l => conteoSectoresMonto[l] || 0);
+            const colors = ['#1d4ed8', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b'];
+
+            // 1. CHART CANTIDAD
+            const ctxCant = document.getElementById('chartSectoresCantCEO').getContext('2d');
+            if (chartCantInstance) chartCantInstance.destroy();
+            chartCantInstance = new Chart(ctxCant, {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: dataCant, backgroundColor: colors.slice(0, labels.length) }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const leyCant = document.getElementById('leyenda_cant_ceo');
+            leyCant.innerHTML = labels.map((l, i) => `
+                <div class="chart-leyenda-item">
+                    <span><strong style="color:${colors[i]}">■</strong> ${l}</span>
+                    <strong>${dataCant[i]} ops</strong>
+                </div>
+            `).join('');
+
+            // 2. CHART MONTO
+            const ctxMonto = document.getElementById('chartSectoresMontoCEO').getContext('2d');
+            if (chartMontoInstance) chartMontoInstance.destroy();
+            chartMontoInstance = new Chart(ctxMonto, {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: dataMonto, backgroundColor: colors.slice(0, labels.length) }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const leyMonto = document.getElementById('leyenda_monto_ceo');
+            leyMonto.innerHTML = labels.map((l, i) => `
+                <div class="chart-leyenda-item">
+                    <span><strong style="color:${colors[i]}">■</strong> ${l}</span>
+                    <strong>$${dataMonto[i] > 0 ? (dataMonto[i]/1000).toFixed(0) + 'k' : '0'}</strong>
+                </div>
+            `).join('');
+        }
+
+        function exportarExcelCEO() {
+            if (datosExportarCEO.length === 0) {
+                alert("No hay operaciones cargadas en la tabla para exportar.");
+                return;
+            }
+
+            const ws = XLSX.utils.json_to_sheet(datosExportarCEO);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Operaciones");
+            XLSX.writeFile(wb, "Baigun_Realty_Operaciones_Filtradas.xlsx");
+        }
+
+        function renderizarTabla() {
+            const tbody = document.querySelector('#tabla-operaciones tbody');
+            tbody.innerHTML = '';
+
+            const textoBusqueda = document.getElementById('input_buscar').value.toLowerCase();
+            const anioSel = document.getElementById('op_filtro_anio').value;
+            const mesSel = document.getElementById('op_filtro_mes').value;
+            const sectorSel = document.getElementById('op_filtro_sector').value;
+
+            const operacionesFiltradas = listaOperacionesGlobal.filter(op => {
+                const cumpleEstado = estadoFiltroActual === 'Todos' || op.estadoCalculado === estadoFiltroActual;
+                const cumpleAnio = (anioSel === 'todos') || (op.anioOp === anioSel);
+                const cumpleMes = (mesSel === 'todos') || (op.mesOp === mesSel);
+                const cumpleSector = evaluarSectorElegido(op, sectorSel);
+
+                const cumpleTexto = (op.nombreMostrar || '').toLowerCase().includes(textoBusqueda) || 
+                                    (op['#'] || '').toLowerCase().includes(textoBusqueda) ||
+                                    (op.propText || '').toLowerCase().includes(textoBusqueda) ||
+                                    (op.compText || '').toLowerCase().includes(textoBusqueda) ||
+                                    (op.vendedorVal || '').toLowerCase().includes(textoBusqueda);
+                                    
+                return cumpleEstado && cumpleAnio && cumpleMes && cumpleSector && cumpleTexto;
+            });
+
+            if (operacionesFiltradas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 15px; color: #64748b;">No se encontraron operaciones.</td></tr>`;
+                return;
+            }
+
+            operacionesFiltradas.forEach(op => {
+                const tr = document.createElement('tr');
+                tr.onclick = () => seleccionarFila(tr, op['#'], op.valorCierreVal, op.empData, op.nombreMostrar, op.esEmp);
+                
+                let badgeClass = 'badge-pendiente';
+                if (op.estadoCalculado === 'Parcial') badgeClass = 'badge-parcial';
+                if (op.estadoCalculado === 'Completo') badgeClass = 'badge-completo';
+
+                const valorFormateado = (op.valorCierreVal !== null && op.valorCierreVal !== undefined) ? `$ ${parseFloat(op.valorCierreVal).toLocaleString('es-AR')}` : '-';
+
+                tr.innerHTML = `
+                    <td><strong>${op['#'] || ''}</strong></td>
+                    <td>${op['Fecha'] || ''}</td>
+                    <td><span class="badge-part">${op.sectorEtiqueta}</span></td>
+                    <td>${op.nombreMostrar || ''}</td>
+                    <td>${op.vendedorVal}</td>
+                    <td><span class="${op.valorCierreVal ? 'badge-monto' : ''}">${valorFormateado}</span></td>
+                    <td>${op.propText}</td>
+                    <td>${op.compText}</td>
+                    <td><span class="badge ${badgeClass}">${op.estadoCalculado}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filtrarEstado(estado, btn) {
+            estadoFiltroActual = estado;
+            document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderizarTabla();
+        }
+
+        function filtrarTexto() { renderizarTabla(); }
+
+        async function cargarComboClientes() {
+            const { data } = await _supabase.from('clientes').select('*').order('nombre_razon_social', { ascending: true });
+            listaClientesGlobal = data || [];
+            
+            ['select_prop_existente', 'select_comp_existente'].forEach(idSelect => {
+                const select = document.getElementById(idSelect);
+                select.innerHTML = '<option value="">-- Buscar o Cargar --</option>';
+                listaClientesGlobal.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id_cliente;
+                    let display = c.razon_social ? c.razon_social : (c.apellido ? `${c.apellido}, ${c.nombre || ''}` : c.nombre_razon_social);
+                    opt.textContent = `${display} ${c.cuit_dni ? '(' + c.cuit_dni + ')' : ''}`;
+                    select.appendChild(opt);
+                });
+            });
+        }
+
+        function seleccionarExistente(tipo) {
+            const idSel = document.getElementById(tipo === 'prop' ? 'select_prop_existente' : 'select_comp_existente').value;
+            const prefix = tipo === 'prop' ? '_prop' : '_comp';
+
+            if (!idSel) {
+                document.getElementById('id' + prefix + '_seleccionado').value = '';
+                document.getElementById('nombre' + prefix).value = '';
+                document.getElementById('apellido' + prefix).value = '';
+                document.getElementById('razon_social' + prefix).value = '';
+                document.getElementById('cuit' + prefix).value = '';
+                document.getElementById('contacto' + prefix).value = '';
+                document.getElementById('mail' + prefix).value = '';
+                document.getElementById('direccion' + prefix).value = '';
+                document.getElementById('provincia' + prefix).value = '';
+                return;
+            }
+
+            const c = listaClientesGlobal.find(item => item.id_cliente == idSel);
+            if (c) {
+                document.getElementById('id' + prefix + '_seleccionado').value = c.id_cliente;
+                const esJuridica = c.es_persona_juridica || Boolean(c.razon_social);
+                const radioFisica = document.querySelector(`input[name="tipo_persona${prefix}"][value="fisica"]`);
+                const radioJuridica = document.querySelector(`input[name="tipo_persona${prefix}"][value="juridica"]`);
+                
+                if (esJuridica) { radioJuridica.checked = true; toggleTipoPersona(prefix, 'juridica'); } 
+                else { radioFisica.checked = true; toggleTipoPersona(prefix, 'fisica'); }
+
+                document.getElementById('nombre' + prefix).value = c.nombre || '';
+                document.getElementById('apellido' + prefix).value = c.apellido || '';
+                document.getElementById('razon_social' + prefix).value = c.razon_social || '';
+                document.getElementById('cuit' + prefix).value = c.cuit_dni || '';
+                document.getElementById('contacto' + prefix).value = c.telefono || '';
+                document.getElementById('mail' + prefix).value = c.mail || '';
+                document.getElementById('direccion' + prefix).value = c.direccion || '';
+                document.getElementById('provincia' + prefix).value = c.provincia || '';
+            }
+        }
+
+        async function seleccionarFila(tr, idOp, valorCierreActual, empData, nombreEmpAlt, esEmp) {
+            document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+            tr.classList.add('selected');
+            document.getElementById('id_operacion').value = idOp;
+            document.getElementById('monto_cierre_op').value = (valorCierreActual !== null && valorCierreActual !== undefined) ? valorCierreActual : '';
+
+            const chkEmp = document.getElementById('chk_es_emprendimiento');
+            chkEmp.checked = esEmp;
+            toggleSeccionEmprendimiento();
+
+            if (empData) {
+                document.getElementById('select_emp_existente').value = empData.id_emprendimiento || '';
+                document.getElementById('id_emp_seleccionado').value = empData.id_emprendimiento || '';
+                document.getElementById('emp_nombre').value = empData.nombre_emprendimiento || '';
+                document.getElementById('emp_direccion').value = empData.direccion || '';
+                document.getElementById('emp_desarrollador').value = empData.desarrollador || '';
+                document.getElementById('emp_productor').value = empData.productor || '';
+            } else {
+                document.getElementById('select_emp_existente').value = '';
+                document.getElementById('id_emp_seleccionado').value = '';
+                document.getElementById('emp_nombre').value = '';
+                document.getElementById('emp_direccion').value = '';
+                document.getElementById('emp_desarrollador').value = '';
+                document.getElementById('emp_productor').value = '';
+            }
+
+            const { data } = await _supabase
+                .from('operaciones_intervinientes')
+                .select('id, rol, clientes(nombre, apellido, razon_social, nombre_razon_social)')
+                .eq('id_operacion', idOp);
+
+            const divSeccion = document.getElementById('seccion-intervinientes-existentes');
+            const divLista = document.getElementById('lista-intervinientes');
+            divLista.innerHTML = '';
+
+            if (data && data.length > 0) {
+                divSeccion.style.display = 'block';
+                data.forEach(item => {
+                    const c = item.clientes;
+                    let display = c?.razon_social ? c.razon_social : (c?.apellido ? `${c.apellido}, ${c.nombre || ''}` : c?.nombre_razon_social);
+                    
+                    const row = document.createElement('div');
+                    row.className = 'item-asignado';
+                    row.innerHTML = `
+                        <span><strong>${item.rol}:</strong> ${display || ''}</span>
+                        <button type="button" class="btn-danger" style="width:auto; padding:1px 5px; font-size:8.5px; margin:0;" onclick="eliminarAsignacion(${item.id})">🗑️ Borrar</button>
+                    `;
+                    divLista.appendChild(row);
+                });
+            } else {
+                divSeccion.style.display = 'none';
+            }
+        }
+
+        async function eliminarAsignacion(idVinculo) {
+            if (!confirm('¿Eliminar esta parte asignada?')) return;
+            await _supabase.from('operaciones_intervinientes').delete().eq('id', idVinculo);
+            inicializar();
+        }
+
+        async function guardarOCrearEmprendimiento() {
+            const esEmp = document.getElementById('chk_es_emprendimiento').checked;
+            if (!esEmp) return null;
+
+            const idSel = document.getElementById('id_emp_seleccionado').value;
+            if (idSel) return idSel;
+
+            const nombre = document.getElementById('emp_nombre').value.trim();
+            const direccion = document.getElementById('emp_direccion').value.trim();
+            const desarrollador = document.getElementById('emp_desarrollador').value.trim();
+            const productor = document.getElementById('emp_productor').value.trim();
+
+            if (!nombre) return null;
+
+            const payload = {
+                nombre_emprendimiento: nombre,
+                direccion: direccion,
+                desarrollador: desarrollador,
+                productor: productor
+            };
+
+            const { data: empNuevo, error } = await _supabase
+                .from('emprendimientos')
+                .insert([payload])
+                .select()
+                .single();
+
+            if (error) { alert('Error al guardar emprendimiento: ' + error.message); return null; }
+            return empNuevo.id_emprendimiento;
+        }
+
+        async function guardarOCrearCliente(prefix) {
+            const idSel = document.getElementById('id' + prefix + '_seleccionado').value;
+            if (idSel) return idSel;
+
+            const esJuridica = document.querySelector(`input[name="tipo_persona${prefix}"]:checked`).value === 'juridica';
+            const nombre = document.getElementById('nombre' + prefix).value.trim();
+            const apellido = document.getElementById('apellido' + prefix).value.trim();
+            const razonSocial = document.getElementById('razon_social' + prefix).value.trim();
+            
+            const cuit = document.getElementById('cuit' + prefix).value.trim();
+            const telefono = document.getElementById('contacto' + prefix).value.trim();
+            const mail = document.getElementById('mail' + prefix).value.trim();
+            const direccion = document.getElementById('direccion' + prefix).value.trim();
+            const provincia = document.getElementById('provincia' + prefix).value.trim();
+
+            if (esJuridica && !razonSocial) return null;
+            if (!esJuridica && !nombre && !apellido) return null;
+
+            let nombreRazonSocialUnificado = esJuridica ? razonSocial : `${apellido}, ${nombre}`.trim();
+
+            const clientePayload = {
+                es_persona_juridica: esJuridica,
+                nombre: esJuridica ? null : nombre,
+                apellido: esJuridica ? null : apellido,
+                razon_social: esJuridica ? razonSocial : null,
+                nombre_razon_social: nombreRazonSocialUnificado,
+                cuit_dni: cuit,
+                telefono: telefono,
+                mail: mail,
+                direccion: direccion,
+                provincia: provincia
+            };
+
+            const { data: clienteNuevo, error } = await _supabase
+                .from('clientes')
+                .insert([clientePayload])
+                .select()
+                .single();
+
+            if (error) { alert('Error al guardar cliente: ' + error.message); return null; }
+            return clienteNuevo.id_cliente;
+        }
+
+        document.getElementById('form-interviniente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const idOp = document.getElementById('id_operacion').value;
+            if (!idOp) { alert('Por favor selecciona una operación de la tabla primero.'); return; }
+
+            const esEmp = document.getElementById('chk_es_emprendimiento').checked;
+            const idEmprendimiento = await guardarOCrearEmprendimiento();
+            const valorCierreStr = document.getElementById('monto_cierre_op').value;
+            
+            const updatePayload = { es_emprendimiento: esEmp };
+            if (esEmp && idEmprendimiento) updatePayload.id_emprendimiento = idEmprendimiento;
+            else if (!esEmp) updatePayload.id_emprendimiento = null;
+
+            if (valorCierreStr !== "") updatePayload.valor_cierre = parseFloat(valorCierreStr);
+
+            await _supabase.from('operaciones').update(updatePayload).eq('#', idOp);
+
+            const idClienteProp = await guardarOCrearCliente('_prop');
+            if (idClienteProp) {
+                await _supabase.from('operaciones_intervinientes').insert([{ id_operacion: idOp, id_cliente: idClienteProp, rol: 'Propietario' }]);
+            }
+
+            const rolComp = document.getElementById('rol_contraparte').value;
+            const idClienteComp = await guardarOCrearCliente('_comp');
+            if (idClienteComp) {
+                await _supabase.from('operaciones_intervinientes').insert([{ id_operacion: idOp, id_cliente: idClienteComp, rol: rolComp }]);
+            }
+
+            alert('¡Partes y datos guardados con éxito!');
+            document.getElementById('form-interviniente').reset();
+            document.getElementById('id_prop_seleccionado').value = '';
+            document.getElementById('id_comp_seleccionado').value = '';
+            document.getElementById('id_emp_seleccionado').value = '';
+            document.getElementById('chk_es_emprendimiento').checked = false;
+            toggleSeccionEmprendimiento();
+            toggleTipoPersona('prop', 'fisica');
+            toggleTipoPersona('comp', 'fisica');
+            inicializar();
+        });
+
+        async function inicializar() {
+            await cargarEmprendimientos();
+            await cargarComboClientes();
+            await cargarOperaciones();
+        }
+
+        verificarSesion();
+    </script>
+</body>
+</html>
