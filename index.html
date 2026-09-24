@@ -388,7 +388,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO CON COMISIONES USD Y ESTRUCTURA REPARADA -->
+        <!-- VISTA CEO CON COMISIONES Y RANKING REPARADO -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -714,6 +714,21 @@
             }
         }
 
+        // BÚSQUEDA UNIVERSAL DE PROPIEDADES EN EL OBJETO DE SUPABASE (SIN IMPORTAR MAYÚSCULAS/MINÚSCULAS O TILDES)
+        function obtenerValorPropiedadFlexible(obj, posiblesNombres) {
+            if (!obj) return 0;
+            const keysObj = Object.keys(obj);
+            for (let p of posiblesNombres) {
+                const pNorm = p.toLowerCase().trim();
+                const keyEncontrada = keysObj.find(k => k.toLowerCase().trim() === pNorm);
+                if (keyEncontrada && obj[keyEncontrada] !== null && obj[keyEncontrada] !== undefined) {
+                    const valParsed = parseFloat(obj[keyEncontrada]);
+                    return isNaN(valParsed) ? 0 : valParsed;
+                }
+            }
+            return 0;
+        }
+
         async function cargarOperaciones() {
             const { data: operaciones, error } = await _supabase.from('operaciones').select('*, emprendimientos(*)');
             if (error) return;
@@ -738,7 +753,7 @@
                     let esValido = false;
 
                     if (c) {
-                        const tieneIdentificacion = Boolean(c.cuit_dni && c.cuit_dni.trim());
+                        const tieneIdentificacion = Boolean(c.cuit_dni && c.cuit_dni.toString().trim());
                         const tieneContacto = Boolean(c.telefono || c.mail);
 
                         if (c.razon_social) {
@@ -807,10 +822,10 @@
                 const vendedorVal = op['Vendedor'] || op['VENDEDOR'] || op['Asesor'] || op['ASESOR'] || '-';
                 const valorCierreVal = op['valor_cierre'] !== null && op['valor_cierre'] !== undefined ? op['valor_cierre'] : null;
 
-                // MATEMÁTICA Y CONVERSIÓN DE INGRESO/COMISIONES A USD
-                const hPesos = parseFloat(op['Honorarios Inquilino/Vendedor (Pesos)'] || op['honorarios_pesos'] || 0) || 0;
-                const cotizacion = parseFloat(op['Cotizacion Dolar'] || op['cotizacion_dolar'] || op['cotizacion'] || 0) || 0;
-                const hUsd = parseFloat(op['Honorarios Comprador/Inquilino (U$S)'] || op['honorarios_usd'] || 0) || 0;
+                // CÁLCULO DE COMISIÓN ROBUSTO CON LECTURA FLEXIBLE DE COLUMNAS
+                const hPesos = obtenerValorPropiedadFlexible(op, ['Honorarios Inquilino/Vendedor (Pesos)', 'HONORARIOS INQUILINO/VENDEDOR (PESOS)', 'honorarios_pesos', 'Honorarios Pesos']);
+                const cotizacion = obtenerValorPropiedadFlexible(op, ['Cotizacion Dolar', 'COTIZACION DOLAR', 'cotizacion_dolar', 'cotizacion', 'Cotizacion']);
+                const hUsd = obtenerValorPropiedadFlexible(op, ['Honorarios Comprador/Inquilino (U$S)', 'HONORARIOS COMPRADOR/INQUILINO (U$S)', 'honorarios_usd', 'Honorarios USD']);
 
                 let comisionCalculadaUSD = 0;
                 if (cotizacion > 0 && hPesos > 0) {
@@ -930,8 +945,8 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
-            const cuitLimpio = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
-            const telLimpio = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
+            const cuitLimpio = c.cuit_dni ? c.cuit_dni.toString().replace(/[^0-9]/g, '') : '';
+            const telLimpio = c.telefono ? c.telefono.toString().replace(/[^0-9]/g, '') : '';
 
             document.getElementById('nombre' + prefix).value = c.nombre || '';
             document.getElementById('apellido' + prefix).value = c.apellido || '';
@@ -1076,8 +1091,8 @@
                     op.clientesDetalle.forEach(det => {
                         const c = det.cliente || {};
 
-                        const cuitNum = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
-                        const telNum = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
+                        const cuitNum = c.cuit_dni ? c.cuit_dni.toString().replace(/[^0-9]/g, '') : '';
+                        const telNum = c.telefono ? c.telefono.toString().replace(/[^0-9]/g, '') : '';
 
                         if (det.rol === 'Propietario') {
                             if (cuitNum) propCuit.push(cuitNum);
@@ -1091,36 +1106,37 @@
                             if (c.mail) compMail.push(c.mail);
                             if (c.direccion) compDir.push(c.direccion);
                             if (c.provincia) compProv.push(c.provincia);
+                        }
 
-                            const nom = det.nombreMostrar;
-                            if (nom && nom !== '-') {
-                                if (!mapaTopCompradores[nom]) {
-                                    mapaTopCompradores[nom] = {
-                                        nombre: nom,
-                                        esJuridica: c.es_persona_juridica || Boolean(c.razon_social),
-                                        cuit: cuitNum || 'S/D',
-                                        telefono: telNum || 'S/D',
-                                        mail: c.mail || 'S/D',
-                                        direccion: c.direccion || 'S/D',
-                                        provincia: c.provincia || 'S/D',
-                                        ops: 0,
-                                        monto: 0,
-                                        comisionUSD: 0,
-                                        rolesMap: {},
-                                        proyectosMap: {},
-                                        ultimaFecha: op['Fecha'] || '-'
-                                    };
-                                }
-                                mapaTopCompradores[nom].ops++;
-                                if (valorNum > 0) mapaTopCompradores[nom].monto += valorNum;
-                                if (comisionOpUSD > 0) mapaTopCompradores[nom].comisionUSD += comisionOpUSD;
-
-                                mapaTopCompradores[nom].rolesMap[det.rol] = (mapaTopCompradores[nom].rolesMap[det.rol] || 0) + 1;
-
-                                const proj = op.nombreMostrar;
-                                if (!mapaTopCompradores[nom].proyectosMap[proj]) mapaTopCompradores[nom].proyectosMap[proj] = 0;
-                                mapaTopCompradores[nom].proyectosMap[proj] += (valorNum > 0 ? valorNum : 1);
+                        // AGRUPAMIENTO UNIVERSAL PARA LA MATRIZ TOP 10 (PROCESA TODOS LOS CLIENTES DE LA OP)
+                        const nom = det.nombreMostrar;
+                        if (nom && nom !== '-') {
+                            if (!mapaTopCompradores[nom]) {
+                                mapaTopCompradores[nom] = {
+                                    nombre: nom,
+                                    esJuridica: c.es_persona_juridica || Boolean(c.razon_social),
+                                    cuit: cuitNum || 'S/D',
+                                    telefono: telNum || 'S/D',
+                                    mail: c.mail || 'S/D',
+                                    direccion: c.direccion || 'S/D',
+                                    provincia: c.provincia || 'S/D',
+                                    ops: 0,
+                                    monto: 0,
+                                    comisionUSD: 0,
+                                    rolesMap: {},
+                                    proyectosMap: {},
+                                    ultimaFecha: op['Fecha'] || '-'
+                                };
                             }
+                            mapaTopCompradores[nom].ops++;
+                            if (valorNum > 0) mapaTopCompradores[nom].monto += valorNum;
+                            if (comisionOpUSD > 0) mapaTopCompradores[nom].comisionUSD += comisionOpUSD;
+
+                            mapaTopCompradores[nom].rolesMap[det.rol] = (mapaTopCompradores[nom].rolesMap[det.rol] || 0) + 1;
+
+                            const proj = op.nombreMostrar;
+                            if (!mapaTopCompradores[nom].proyectosMap[proj]) mapaTopCompradores[nom].proyectosMap[proj] = 0;
+                            mapaTopCompradores[nom].proyectosMap[proj] += (valorNum > 0 ? valorNum : 1);
                         }
                     });
 
@@ -1182,16 +1198,17 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
+        // RENDERIZADO DE MATRIZ TOP 10 REPARADO Y CON TOOLTIP FLOTANTE
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
 
             const listaTop = Object.values(mapaTop)
-                .sort((a, b) => b.ops - a.ops || b.monto - a.monto)
+                .sort((a, b) => b.ops - a.ops || b.monto - a.monto || b.comisionUSD - a.comisionUSD)
                 .slice(0, 10);
 
             if (listaTop.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#64748b; padding:10px;">Sin compradores en esta selección.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#64748b; padding:10px;">Sin intervinientes en esta selección.</td></tr>`;
                 return;
             }
 
