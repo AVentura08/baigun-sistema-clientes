@@ -95,6 +95,7 @@
         .badge-completo { background-color: #f0fdf4; color: #166534; border: 1px solid #86efac; }
         .badge-part { background-color: #e2e8f0; color: #334155; font-weight: 600; padding: 1px 5px; border-radius: 3px; font-size: 9px; }
         .badge-monto { background-color: #dcfce7; color: #15803d; font-weight: 700; padding: 1px 5px; border-radius: 3px; font-size: 9px; }
+        .badge-comision { background-color: #ecfdf5; color: #047857; font-weight: 800; padding: 1px 5px; border-radius: 3px; font-size: 9px; border: 1px solid #a7f3d0; }
 
         .ceo-filter-panel { background: white; padding: 8px; border-radius: 5px; border: 1px solid var(--border-color); margin-bottom: 8px; flex-shrink: 0; }
         .ceo-filter-layer { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 6px; }
@@ -106,8 +107,8 @@
         .kpi-card-ceo .label { font-size: 8.5px; color: #64748b; font-weight: 700; text-transform: uppercase; }
 
         .ceo-split-container { display: flex; gap: 8px; flex: 1; min-height: 0; }
-        .ceo-left-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-        .ceo-right-panel { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+        .ceo-left-panel { flex: 1.1; display: flex; flex-direction: column; min-height: 0; }
+        .ceo-right-panel { flex: 1.1; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
 
         .ceo-card-widget { background: white; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .ceo-card-widget h5 { margin: 0 0 6px 0; color: var(--brand-dark); font-size: 10px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
@@ -316,7 +317,6 @@
                                 </div>
 
                                 <div class="form-row">
-                                    <!-- RESTRICCIÓN DÍGITOS PUROS PARA CUIT Y TELÉFONO -->
                                     <div class="form-group"><label>CUIT/DNI (Solo números):</label><input type="text" id="cuit_prop" placeholder="20123456789" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                     <div class="form-group"><label>Teléfono (Solo números):</label><input type="text" id="contacto_prop" placeholder="1155667788" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                 </div>
@@ -369,7 +369,6 @@
                                 </div>
 
                                 <div class="form-row">
-                                    <!-- RESTRICCIÓN DÍGITOS PUROS PARA CUIT Y TELÉFONO -->
                                     <div class="form-group"><label>CUIT/DNI (Solo números):</label><input type="text" id="cuit_comp" placeholder="27876543210" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                     <div class="form-group"><label>Teléfono (Solo números):</label><input type="text" id="contacto_comp" placeholder="1199887766" oninput="this.value = this.value.replace(/[^0-9]/g, '')"></div>
                                 </div>
@@ -389,7 +388,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO -->
+        <!-- VISTA CEO CON COLUMNAS DE COMISIÓN Y SECTOR + TIPO INGRESO -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -487,12 +486,12 @@
                     <div class="value" id="ceo_kpi_total">0</div>
                 </div>
                 <div class="kpi-card-ceo">
-                    <div class="label">Monto Total Acumulado</div>
+                    <div class="label">Monto Total Cierre</div>
                     <div class="value" style="color:#15803d;" id="ceo_kpi_monto">$0</div>
                 </div>
                 <div class="kpi-card-ceo">
-                    <div class="label">Propietarios Únicos</div>
-                    <div class="value" style="color:#1d4ed8;" id="ceo_kpi_props">0</div>
+                    <div class="label">Comisiones Totales (USD)</div>
+                    <div class="value" style="color:#047857;" id="ceo_kpi_comision">$0</div>
                 </div>
                 <div class="kpi-card-ceo">
                     <div class="label">Compradores / Inq. Únicos</div>
@@ -508,15 +507,17 @@
                                 <tr>
                                     <th># Op.</th>
                                     <th>Fecha</th>
+                                    <th>Sector + Tipo Ingreso</th>
                                     <th>Emprendimiento / Dirección</th>
                                     <th>Valor Cierre</th>
+                                    <th>Comisión (USD)</th>
                                     <th>Propietario(s)</th>
                                     <th>Comprador(es) / Inquilino(s)</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="7" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
+                                <tr><td colspan="8" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -534,12 +535,12 @@
                                     <tr>
                                         <th style="width:20px; text-align:center;">#</th>
                                         <th>Interviniente / Firma</th>
-                                        <th style="text-align:center; width:65px;">Tipo Persona</th>
-                                        <th style="text-align:center; width:45px;">Ops (#)</th>
-                                        <th style="text-align:center; width:100px;">Roles Históricos</th>
-                                        <th>Emprendimiento / Activo Clave</th>
-                                        <th style="text-align:center; width:65px;">Última Op.</th>
-                                        <th style="text-align:right; width:95px;">Suma Cierre ($)</th>
+                                        <th style="text-align:center; width:60px;">Tipo</th>
+                                        <th style="text-align:center; width:35px;">Ops</th>
+                                        <th style="text-align:center; width:80px;">Roles</th>
+                                        <th>Activo Clave</th>
+                                        <th style="text-align:right; width:80px;">Suma Cierre ($)</th>
+                                        <th style="text-align:right; width:85px;">Comisión USD</th>
                                     </tr>
                                 </thead>
                                 <tbody id="top_compradores_tbody">
@@ -806,6 +807,17 @@
                 const vendedorVal = op['Vendedor'] || op['VENDEDOR'] || op['Asesor'] || op['ASESOR'] || '-';
                 const valorCierreVal = op['valor_cierre'] !== null && op['valor_cierre'] !== undefined ? op['valor_cierre'] : null;
 
+                // CÁLCULO DE COMISIÓN TOTAL EN USD
+                const hPesos = parseFloat(op['Honorarios Inquilino/Vendedor (Pesos)'] || op['honorarios_pesos'] || 0) || 0;
+                const cotizacion = parseFloat(op['Cotizacion Dolar'] || op['cotizacion_dolar'] || op['cotizacion'] || 0) || 0;
+                const hUsd = parseFloat(op['Honorarios Comprador/Inquilino (U$S)'] || op['honorarios_usd'] || 0) || 0;
+
+                let comisionCalculadaUSD = 0;
+                if (cotizacion > 0 && hPesos > 0) {
+                    comisionCalculadaUSD += (hPesos / cotizacion);
+                }
+                comisionCalculadaUSD += hUsd;
+
                 const esEmp = Boolean(op.es_emprendimiento || op.id_emprendimiento);
                 const emp = op.emprendimientos;
                 const nombreEmprendimientoOficial = emp?.nombre_emprendimiento || null;
@@ -825,7 +837,7 @@
 
                 const clientesDetalle = mapaDetalleClientes[op['#']] || [];
 
-                return { ...op, propText, compText, estadoCalculado, anioOp, mesOp, sectorVal, tipoIngresoVal, sectorEtiqueta, vendedorVal, valorCierreVal, esEmp, nombreEmprendimientoOficial, direccionIndividual, nombreMostrar, empData: emp, clientesDetalle };
+                return { ...op, propText, compText, estadoCalculado, anioOp, mesOp, sectorVal, tipoIngresoVal, sectorEtiqueta, vendedorVal, valorCierreVal, comisionCalculadaUSD, esEmp, nombreEmprendimientoOficial, direccionIndividual, nombreMostrar, empData: emp, clientesDetalle };
             });
 
             poblarAgentesCEO();
@@ -855,7 +867,6 @@
             listaClientesGlobal = data || [];
         }
 
-        // LÓGICA DE BÚSQUEDA Y AUTOCOMPLETADO
         function buscarYFiltrarFlotante(tipo) {
             const query = document.getElementById(`input_buscar_${tipo}`).value.toLowerCase().trim();
             const box = document.getElementById(`box_results_${tipo}`);
@@ -919,7 +930,6 @@
                 toggleTipoPersona(prefix, 'fisica'); 
             }
 
-            // MANTENIMIENTO DE DÍGITOS PUROS
             const cuitLimpio = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
             const telLimpio = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
 
@@ -1037,9 +1047,10 @@
             const conteoSectoresMonto = {};
 
             if (operacionesFiltradas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
             } else {
                 let montoAcumulado = 0;
+                let comisionAcumuladaTotal = 0;
 
                 operacionesFiltradas.forEach(op => {
                     const tr = document.createElement('tr');
@@ -1051,18 +1062,20 @@
                     const valorFormateado = (op.valorCierreVal !== null && op.valorCierreVal !== undefined) ? `$ ${valorNum.toLocaleString('es-AR')}` : '-';
                     if (valorNum > 0) montoAcumulado += valorNum;
 
+                    const comisionOpUSD = op.comisionCalculadaUSD || 0;
+                    if (comisionOpUSD > 0) comisionAcumuladaTotal += comisionOpUSD;
+                    const comisionFormateada = comisionOpUSD > 0 ? `$ ${Math.round(comisionOpUSD).toLocaleString('es-AR')}` : '-';
+
                     const secNombre = op.sectorVal || 'Otros';
                     conteoSectoresCant[secNombre] = (conteoSectoresCant[secNombre] || 0) + 1;
                     conteoSectoresMonto[secNombre] = (conteoSectoresMonto[secNombre] || 0) + valorNum;
 
-                    // CONSTRUCCIÓN DE COLUMNAS SEPARADAS PARA EXCEL
                     let propCuit = []; let propTel = []; let propMail = []; let propDir = []; let propProv = [];
                     let compCuit = []; let compTel = []; let compMail = []; let compDir = []; let compProv = [];
 
                     op.clientesDetalle.forEach(det => {
                         const c = det.cliente || {};
 
-                        // Sanitizar números
                         const cuitNum = c.cuit_dni ? c.cuit_dni.replace(/[^0-9]/g, '') : '';
                         const telNum = c.telefono ? c.telefono.replace(/[^0-9]/g, '') : '';
 
@@ -1092,6 +1105,7 @@
                                         provincia: c.provincia || 'S/D',
                                         ops: 0,
                                         monto: 0,
+                                        comisionUSD: 0,
                                         rolesMap: {},
                                         proyectosMap: {},
                                         ultimaFecha: op['Fecha'] || '-'
@@ -1099,6 +1113,7 @@
                                 }
                                 mapaTopCompradores[nom].ops++;
                                 if (valorNum > 0) mapaTopCompradores[nom].monto += valorNum;
+                                if (comisionOpUSD > 0) mapaTopCompradores[nom].comisionUSD += comisionOpUSD;
 
                                 mapaTopCompradores[nom].rolesMap[det.rol] = (mapaTopCompradores[nom].rolesMap[det.rol] || 0) + 1;
 
@@ -1109,30 +1124,35 @@
                         }
                     });
 
+                    // TABLA IZQUIERDA: AGREGADA COLUMNA COMISIÓN USD
                     tr.innerHTML = `
                         <td><strong>${op['#'] || ''}</strong></td>
                         <td>${op['Fecha'] || ''}</td>
+                        <td><span class="badge-part">${op.sectorEtiqueta}</span></td>
                         <td><strong>${op.nombreMostrar}</strong></td>
                         <td><span class="${op.valorCierreVal ? 'badge-monto' : ''}">${valorFormateado}</span></td>
+                        <td><span class="${comisionOpUSD > 0 ? 'badge-comision' : ''}">${comisionFormateada}</span></td>
                         <td><a href="#" onclick="filtrarDirectoInterviniente('${op.propText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.propText}</a></td>
                         <td><a href="#" onclick="filtrarDirectoInterviniente('${op.compText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.compText}</a></td>
                         <td><span class="badge ${badgeClass}">${op.estadoCalculado}</span></td>
                     `;
                     tbody.appendChild(tr);
 
-                    // EXCEL CON CELDAS 100% INDIVIDUALES POR DATO
+                    // EXCEL CON COLUMNA DE COMISIÓN TOTAL USD
                     datosExportarCEO.push({
                         "# Operación": op['#'] || '',
                         "Fecha": op['Fecha'] || '',
                         "Origen": op.esEmp ? 'Emprendimiento' : 'Individual / Usado',
                         "Sector": op.sectorVal,
                         "Tipo Ingreso": op.tipoIngresoVal,
+                        "Sector + Tipo Ingreso": op.sectorEtiqueta,
                         "Emprendimiento Oficial": op.nombreEmprendimientoOficial || '-',
                         "Dirección Inmueble": op.direccionIndividual || '',
                         "Desarrollador": op.empData?.desarrollador || '-',
                         "Productor": op.empData?.productor || '-',
                         "Vendedor / Asesor": op.vendedorVal,
                         "Valor Cierre": op.valorCierreVal || '-',
+                        "Comisión Total USD": comisionOpUSD > 0 ? Math.round(comisionOpUSD) : 0,
                         "Propietarios Nombre": op.propText,
                         "Propietario CUIT/DNI": propCuit.join(', ') || '-',
                         "Propietario Teléfono": propTel.join(', ') || '-',
@@ -1150,6 +1170,7 @@
                 });
 
                 document.getElementById('ceo_kpi_monto').textContent = `$ ${montoAcumulado.toLocaleString('es-AR')}`;
+                document.getElementById('ceo_kpi_comision').textContent = `$ ${Math.round(comisionAcumuladaTotal).toLocaleString('es-AR')}`;
             }
 
             const propsContados = new Set(operacionesFiltradas.map(o => o.propText).filter(p => p !== '-')).size;
@@ -1163,7 +1184,7 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
-        // MATRIZ TOP 10 CON POPUP / TOOLTIP CON VISIBILIDAD GARANTIZADA
+        // MATRIZ TOP 10 CON COLUMNA DE SUMA COMISIÓN USD Y TOOLTIP
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
@@ -1180,6 +1201,7 @@
             listaTop.forEach((item, index) => {
                 const tr = document.createElement('tr');
                 const montoTxt = item.monto > 0 ? `$ ${item.monto.toLocaleString('es-AR')}` : '-';
+                const comisionTxt = item.comisionUSD > 0 ? `$ ${Math.round(item.comisionUSD).toLocaleString('es-AR')}` : '-';
 
                 const rolesTxt = Object.keys(item.rolesMap)
                     .map(r => `${item.rolesMap[r]} ${r.substring(0,4)}`)
@@ -1201,7 +1223,6 @@
                     <td style="position:relative;">
                         <a href="#" onclick="filtrarDirectoInterviniente('${item.nombre}'); return false;" style="color:var(--brand-dark); text-decoration:none; font-weight:700;">${item.nombre}</a>
                         
-                        <!-- TOOLTIP CON CAPA SUPERIOR SUPERPUESTA Z-INDEX 999999 -->
                         <div class="tooltip-card">
                             <h6>👤 FICHA DE CLIENTE</h6>
                             <div class="tooltip-row"><span class="tooltip-label">Firma:</span><span class="tooltip-val">${item.nombre}</span></div>
@@ -1216,8 +1237,8 @@
                     <td style="text-align:center;"><span class="badge-part" style="background:#dbeafe; color:#1e40af; font-weight:800;">${item.ops}</span></td>
                     <td style="text-align:center; font-size:8px; color:#475569;">${rolesTxt}</td>
                     <td style="font-weight:600; color:#0369a1;">${proyectoClave}</td>
-                    <td style="text-align:center; font-size:8.5px;">${item.ultimaFecha}</td>
                     <td style="text-align:right; font-weight:700; color:#166534;">${montoTxt}</td>
+                    <td style="text-align:right; font-weight:800; color:#047857;"><span class="${item.comisionUSD > 0 ? 'badge-comision' : ''}">${comisionTxt}</span></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1437,7 +1458,6 @@
             const apellido = document.getElementById('apellido' + prefix).value.trim();
             const razonSocial = document.getElementById('razon_social' + prefix).value.trim();
             
-            // SANITIZACIÓN FINAL DE DÍGITOS PUROS PARA BASE DE DATOS
             const cuit = document.getElementById('cuit' + prefix).value.trim().replace(/[^0-9]/g, '');
             const telefono = document.getElementById('contacto' + prefix).value.trim().replace(/[^0-9]/g, '');
             const mail = document.getElementById('mail' + prefix).value.trim();
