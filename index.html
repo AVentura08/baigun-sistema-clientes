@@ -49,10 +49,10 @@
         .btn-filter { background: white; color: #334155; border: 1px solid #cbd5e1; padding: 3px 6px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 9.5px; transition: all 0.2s; white-space: nowrap; }
         .btn-filter.active { background: var(--brand-dark); color: white; border-color: var(--brand-dark); }
 
-        .table-scroll-container { flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 5px; background: white; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+        .table-scroll-container { flex: 1; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 5px; background: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 9.5px; white-space: nowrap; }
         th, td { border: 1px solid var(--border-color); padding: 4px 6px; text-align: left; }
-        th { position: sticky; top: 0; z-index: 2; background-color: var(--brand-dark); color: white; font-weight: 600; text-transform: uppercase; font-size: 9px; }
+        th { position: sticky; top: 0; z-index: 2; background-color: var(--brand-dark); color: white; font-weight: 600; text-transform: uppercase; font-size: 8.5px; }
         
         tbody tr:nth-child(even) { background-color: var(--zebra-even); }
         tbody tr:nth-child(odd) { background-color: #ffffff; }
@@ -107,7 +107,7 @@
         .kpi-card-ceo .label { font-size: 8.5px; color: #64748b; font-weight: 700; text-transform: uppercase; }
 
         .ceo-split-container { display: flex; gap: 8px; flex: 1; min-height: 0; }
-        .ceo-left-panel { flex: 1.1; display: flex; flex-direction: column; min-height: 0; }
+        .ceo-left-panel { flex: 1.2; display: flex; flex-direction: column; min-height: 0; }
         .ceo-right-panel { flex: 1.1; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
 
         .ceo-card-widget { background: white; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
@@ -115,9 +115,9 @@
 
         .top-table { width: 100%; border-collapse: collapse; font-size: 9px; }
         .top-table th { background: #e2e8f0; color: var(--brand-dark); font-size: 8px; padding: 3px 5px; text-transform: uppercase; border: 1px solid #cbd5e1; }
-        .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; position: relative; }
+        .top-table td { border: 1px solid #e2e8f0; padding: 3px 5px; position: relative; white-space: nowrap; }
         
-        .tooltip-card { display: none; position: absolute; top: 22px; left: 10px; z-index: 999999; width: 230px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #60a5fa; font-size: 9.5px; text-align: left; pointer-events: none; }
+        .tooltip-card { display: none; position: absolute; top: 22px; left: 10px; z-index: 999999; width: 230px; background: #0b1a30; color: white; padding: 8px; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #60a5fa; font-size: 9.5px; text-align: left; pointer-events: none; white-space: normal; }
         td:hover .tooltip-card { display: block; }
         .tooltip-card h6 { margin: 0 0 4px 0; color: #60a5fa; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #1e3a8a; padding-bottom: 2px; }
         .tooltip-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
@@ -388,7 +388,7 @@
             </div>
         </div>
 
-        <!-- VISTA CEO CON COLUMNAS DE COMISIÓN Y SECTOR + TIPO INGRESO -->
+        <!-- VISTA CEO CON COMISIONES USD Y ESTRUCTURA REPARADA -->
         <div id="vista-ejecutiva" class="panel-tabla" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0;">
                 <h3 style="margin:0; color: var(--brand-dark);">📊 Dashboard Ejecutivo de Gestión - CEO</h3>
@@ -517,7 +517,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="8" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
+                                <tr><td colspan="9" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -535,12 +535,12 @@
                                     <tr>
                                         <th style="width:20px; text-align:center;">#</th>
                                         <th>Interviniente / Firma</th>
-                                        <th style="text-align:center; width:60px;">Tipo</th>
-                                        <th style="text-align:center; width:35px;">Ops</th>
-                                        <th style="text-align:center; width:80px;">Roles</th>
+                                        <th style="text-align:center; width:50px;">Tipo</th>
+                                        <th style="text-align:center; width:30px;">Ops</th>
+                                        <th style="text-align:center; width:70px;">Roles</th>
                                         <th>Activo Clave</th>
-                                        <th style="text-align:right; width:80px;">Suma Cierre ($)</th>
-                                        <th style="text-align:right; width:85px;">Comisión USD</th>
+                                        <th style="text-align:right; width:75px;">Suma Cierre ($)</th>
+                                        <th style="text-align:right; width:80px;">Comisión USD</th>
                                     </tr>
                                 </thead>
                                 <tbody id="top_compradores_tbody">
@@ -807,7 +807,7 @@
                 const vendedorVal = op['Vendedor'] || op['VENDEDOR'] || op['Asesor'] || op['ASESOR'] || '-';
                 const valorCierreVal = op['valor_cierre'] !== null && op['valor_cierre'] !== undefined ? op['valor_cierre'] : null;
 
-                // CÁLCULO DE COMISIÓN TOTAL EN USD
+                // MATEMÁTICA Y CONVERSIÓN DE INGRESO/COMISIONES A USD
                 const hPesos = parseFloat(op['Honorarios Inquilino/Vendedor (Pesos)'] || op['honorarios_pesos'] || 0) || 0;
                 const cotizacion = parseFloat(op['Cotizacion Dolar'] || op['cotizacion_dolar'] || op['cotizacion'] || 0) || 0;
                 const hUsd = parseFloat(op['Honorarios Comprador/Inquilino (U$S)'] || op['honorarios_usd'] || 0) || 0;
@@ -1047,7 +1047,7 @@
             const conteoSectoresMonto = {};
 
             if (operacionesFiltradas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
             } else {
                 let montoAcumulado = 0;
                 let comisionAcumuladaTotal = 0;
@@ -1124,7 +1124,6 @@
                         }
                     });
 
-                    // TABLA IZQUIERDA: AGREGADA COLUMNA COMISIÓN USD
                     tr.innerHTML = `
                         <td><strong>${op['#'] || ''}</strong></td>
                         <td>${op['Fecha'] || ''}</td>
@@ -1138,7 +1137,6 @@
                     `;
                     tbody.appendChild(tr);
 
-                    // EXCEL CON COLUMNA DE COMISIÓN TOTAL USD
                     datosExportarCEO.push({
                         "# Operación": op['#'] || '',
                         "Fecha": op['Fecha'] || '',
@@ -1184,7 +1182,6 @@
             renderizarDobleGrafico(conteoSectoresCant, conteoSectoresMonto);
         }
 
-        // MATRIZ TOP 10 CON COLUMNA DE SUMA COMISIÓN USD Y TOOLTIP
         function renderizarTop10Compradores(mapaTop) {
             const tbody = document.getElementById('top_compradores_tbody');
             tbody.innerHTML = '';
