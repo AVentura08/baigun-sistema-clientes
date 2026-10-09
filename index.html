@@ -765,19 +765,27 @@
             return totalUSD;
         }
 
-async function cargarOperaciones() {
-    // RANGO EXTENDIDO PARA TRAER TODO EL HISTORIAL COMPLETO SIN CORTE EN 1.000 REGISTROS
-    const resp1 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 999).order('#', { ascending: false });
-    const resp2 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(1000, 2000).order('#', { ascending: false });
-    const operaciones = [...(resp1.data || []), ...(resp2.data || [])];
+        async function cargarOperaciones() {
+            // TRAER TANDAS SEGURAS (0 a 999 Y 1000 a 2500) SIN CONDICIONES DE ORDEN QUE HAGAN FALLAR LA API
+            const res1 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 999);
+            const res2 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(1000, 2500);
 
-    const { data: vinculos } = await _supabase
-        .from('operaciones_intervinientes')
-        .select('id_operacion, rol, id_cliente, clientes(*)');
+            if (res1.error) {
+                console.error("Error al cargar operaciones:", res1.error);
+                return;
+            }
 
-    const mapaIntervinientes = {};
-    const mapaCompletitud = {};
-    const mapaDetalleClientes = {};
+            const opList1 = res1.data || [];
+            const opList2 = res2.data || [];
+            const operaciones = [...opList1, ...opList2];
+
+            const { data: vinculos } = await _supabase
+                .from('operaciones_intervinientes')
+                .select('id_operacion, rol, id_cliente, clientes(*)');
+
+            const mapaIntervinientes = {};
+            const mapaCompletitud = {};
+            const mapaDetalleClientes = {};
 
             if (vinculos) {
                 vinculos.forEach(v => {
