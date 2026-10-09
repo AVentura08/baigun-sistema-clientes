@@ -766,7 +766,8 @@
         }
 
         async function cargarOperaciones() {
-            const { data: operaciones, error } = await _supabase.from('operaciones').select('*, emprendimientos(*)');
+            // RANGO EXTENDIDO PARA TRAER TODO EL HISTORIAL COMPLETO SIN CORTE EN 1.000 REGISTROS
+            const { data: operaciones, error } = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 5000);
             if (error) return;
 
             const { data: vinculos } = await _supabase
