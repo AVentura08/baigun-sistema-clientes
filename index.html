@@ -765,18 +765,19 @@
             return totalUSD;
         }
 
-        async function cargarOperaciones() {
-            // RANGO EXTENDIDO PARA TRAER TODO EL HISTORIAL COMPLETO SIN CORTE EN 1.000 REGISTROS
-            const { data: operaciones, error } = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 5000);
-            if (error) return;
+async function cargarOperaciones() {
+    // RANGO EXTENDIDO PARA TRAER TODO EL HISTORIAL COMPLETO SIN CORTE EN 1.000 REGISTROS
+    const resp1 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 999).order('#', { ascending: false });
+    const resp2 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(1000, 2000).order('#', { ascending: false });
+    const operaciones = [...(resp1.data || []), ...(resp2.data || [])];
 
-            const { data: vinculos } = await _supabase
-                .from('operaciones_intervinientes')
-                .select('id_operacion, rol, id_cliente, clientes(*)');
+    const { data: vinculos } = await _supabase
+        .from('operaciones_intervinientes')
+        .select('id_operacion, rol, id_cliente, clientes(*)');
 
-            const mapaIntervinientes = {};
-            const mapaCompletitud = {};
-            const mapaDetalleClientes = {};
+    const mapaIntervinientes = {};
+    const mapaCompletitud = {};
+    const mapaDetalleClientes = {};
 
             if (vinculos) {
                 vinculos.forEach(v => {
