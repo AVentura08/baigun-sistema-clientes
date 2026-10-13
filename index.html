@@ -779,7 +779,6 @@
             const res2 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(1000, 2500);
             if (res1.error) return;
             const operaciones = [...(res1.data || []), ...(res2.data || [])];
-            if (error) return;
 
             const { data: vinculos } = await _supabase
                 .from('operaciones_intervinientes')
