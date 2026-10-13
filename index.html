@@ -734,21 +734,28 @@
             return 0;
         }
 
-        // CÁLCULO SEGURO CON FORMATO ARGENTINO Y MULTI-COLUMNA
+        // CÁLCULO SEGURO CON FORMATO ARGENTINO Y MULTI-COLUMNA (AMBAS PARTES)
         function calcularIngresoUSDDeOperacion(op) {
             if (!op) return 0;
 
-            // 1. Dólares Directos (Comprador/Inquilino)
-            const usdDirectos = obtenerValorPropiedadFlexible(op, [
+            // 1. Dólares Directos (Comprador/Inquilino + Propietario/Vendedor)
+            const usdComprador = obtenerValorPropiedadFlexible(op, [
                 'Monto U$S inquilino/comprador', 'Monto USS inquilino/comprador',
                 'Honorarios Comprador/Inquilino (U$S)', 'HONORARIOS COMPRADOR/INQUILINO (U$S)',
                 'ingresos_usd', 'comision_usd', 'honorarios_usd'
             ]);
+            const usdPropietario = obtenerValorPropiedadFlexible(op, [
+                'Monto U$S propietario', 'Monto USS propietario',
+                'Honorarios Propietario/Vendedor (U$S)', 'HONORARIOS PROPIETARIO/VENDEDOR (U$S)'
+            ]);
 
-            // 2. Pesos (Vendedor/Propietario o Inquilino)
-            const pesosARS = obtenerValorPropiedadFlexible(op, [
-                'Monto Pesos inquilino/comprador', 'Monto Pesos vendedor/propietario',
-                'Honorarios Inquilino/Vendedor (Pesos)', 'HONORARIOS INQUILINO/VENDEDOR (PESOS)',
+            // 2. Pesos (Comprador/Inquilino + Propietario/Vendedor)
+            const pesosComprador = obtenerValorPropiedadFlexible(op, [
+                'Monto Pesos inquilino/comprador', 'Honorarios Inquilino/Comprador (Pesos)'
+            ]);
+            const pesosPropietario = obtenerValorPropiedadFlexible(op, [
+                'Monto Pesos propietario', 'Monto Pesos vendedor/propietario',
+                'Honorarios Vendedor/Propietario (Pesos)', 'HONORARIOS VENDEDOR/PROPIETARIO (PESOS)',
                 'honorarios_pesos', 'comision_pesos'
             ]);
 
@@ -757,27 +764,22 @@
                 'Cotizacion Dolar', 'COTIZACION DOLAR', 'cotizacion_dolar', 'Cotizacion', 'COTIZACION', 'dolar'
             ]);
 
-            let totalUSD = usdDirectos;
-            if (cotizacion > 0 && pesosARS > 0) {
-                totalUSD += (pesosARS / cotizacion);
+            let totalUSD = usdComprador + usdPropietario;
+            const totalPesos = pesosComprador + pesosPropietario;
+
+            if (cotizacion > 0 && totalPesos > 0) {
+                totalUSD += (totalPesos / cotizacion);
             }
 
             return totalUSD;
         }
 
         async function cargarOperaciones() {
-            // TRAER TANDAS SEGURAS (0 a 999 Y 1000 a 2500) SIN CONDICIONES DE ORDEN QUE HAGAN FALLAR LA API
             const res1 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(0, 999);
             const res2 = await _supabase.from('operaciones').select('*, emprendimientos(*)').range(1000, 2500);
-
-            if (res1.error) {
-                console.error("Error al cargar operaciones:", res1.error);
-                return;
-            }
-
-            const opList1 = res1.data || [];
-            const opList2 = res2.data || [];
-            const operaciones = [...opList1, ...opList2];
+            if (res1.error) return;
+            const operaciones = [...(res1.data || []), ...(res2.data || [])];
+            if (error) return;
 
             const { data: vinculos } = await _supabase
                 .from('operaciones_intervinientes')
