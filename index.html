@@ -228,7 +228,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td colspan="9" style="text-align:center; padding: 10px; color: #64748b;">Cargando datos...</td></tr>
+                            <tr><td colspan="11" style="text-align:center; padding: 10px; color: #64748b;">Cargando datos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -504,13 +504,15 @@
                                     <th>Emprendimiento / Dirección</th>
                                     <th>Valor Cierre</th>
                                     <th>Propietario(s)</th>
-                                    <th>Comprador(es) / Inquilino(s)</th>
-                                    <th>Ingresos (USD)</th>
+                                    <th>Ingreso Prop. USD</th>
+                                    <th>Comprador(es) / Inq.</th>
+                                    <th>Ingreso Comp. USD</th>
+                                    <th>Total USD</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td colspan="9" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
+                                <tr><td colspan="11" style="text-align:center; padding:10px; color:#64748b;">Cargando dashboard...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -538,7 +540,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="top_compradores_tbody">
-                                    <tr><td colspan="9" style="text-align:center; color:#64748b; padding:10px;">Sin compradores en esta selección.</td></tr>
+                                    <tr><td colspan="11" style="text-align:center; color:#64748b; padding:10px;">Sin compradores en esta selección.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -734,11 +736,11 @@
             return 0;
         }
 
-        // CÁLCULO SEGURO CON FORMATO ARGENTINO Y MULTI-COLUMNA (AMBAS PARTES)
-        function calcularIngresoUSDDeOperacion(op) {
-            if (!op) return 0;
+        // CÁLCULO SEGURO CON FORMATO ARGENTINO Y MULTI-COLUMNA (DESGLOSADO)
+        function calcularIngresosDesglosados(op) {
+            if (!op) return { totalPropUSD: 0, totalCompUSD: 0, totalUSD: 0 };
 
-            // 1. Dólares Directos (Comprador/Inquilino + Propietario/Vendedor)
+            // 1. Dólares Directos
             const usdComprador = obtenerValorPropiedadFlexible(op, [
                 'Monto U$S inquilino/comprador', 'Monto USS inquilino/comprador',
                 'Honorarios Comprador/Inquilino (U$S)', 'HONORARIOS COMPRADOR/INQUILINO (U$S)',
@@ -749,7 +751,7 @@
                 'Honorarios Propietario/Vendedor (U$S)', 'HONORARIOS PROPIETARIO/VENDEDOR (U$S)'
             ]);
 
-            // 2. Pesos (Comprador/Inquilino + Propietario/Vendedor)
+            // 2. Pesos
             const pesosComprador = obtenerValorPropiedadFlexible(op, [
                 'Monto Pesos inquilino/comprador', 'Honorarios Inquilino/Comprador (Pesos)'
             ]);
@@ -759,19 +761,24 @@
                 'honorarios_pesos', 'comision_pesos'
             ]);
 
-            // 3. Cotización del Dólar
+            // 3. Cotización
             const cotizacion = obtenerValorPropiedadFlexible(op, [
                 'Cotizacion Dolar', 'COTIZACION DOLAR', 'cotizacion_dolar', 'Cotizacion', 'COTIZACION', 'dolar'
             ]);
 
-            let totalUSD = usdComprador + usdPropietario;
-            const totalPesos = pesosComprador + pesosPropietario;
+            let propUSD = usdPropietario;
+            let compUSD = usdComprador;
 
-            if (cotizacion > 0 && totalPesos > 0) {
-                totalUSD += (totalPesos / cotizacion);
+            if (cotizacion > 0) {
+                if (pesosPropietario > 0) propUSD += (pesosPropietario / cotizacion);
+                if (pesosComprador > 0) compUSD += (pesosComprador / cotizacion);
             }
 
-            return totalUSD;
+            return {
+                totalPropUSD: propUSD,
+                totalCompUSD: compUSD,
+                totalUSD: propUSD + compUSD
+            };
         }
 
         async function cargarOperaciones() {
@@ -871,8 +878,11 @@
                 // LECTURA FLEXIBLE DE VALOR CIERRE CON FORMATO ARGENTINO
                 const valorCierreVal = obtenerValorPropiedadFlexible(op, ['valor_cierre', 'VALOR CIERRE', 'Valor Cierre', 'monto_cierre', 'Valor de Cierre']);
 
-                // CÁLCULO QUE CONVIERTE TEXTO Y SUMA HASTA CENTAVOS
-                const comisionCalculadaUSD = calcularIngresoUSDDeOperacion(op);
+                // CÁLCULO DESGLOSADO DE COMISIONES
+                const ingresosObj = calcularIngresosDesglosados(op);
+                const comisionPropUSD = ingresosObj.totalPropUSD;
+                const comisionCompUSD = ingresosObj.totalCompUSD;
+                const comisionCalculadaUSD = ingresosObj.totalUSD;
 
                 const esEmp = Boolean(op.es_emprendimiento || op.id_emprendimiento);
                 const emp = op.emprendimientos;
@@ -893,7 +903,7 @@
 
                 const clientesDetalle = mapaDetalleClientes[op['#']] || [];
 
-                return { ...op, propText, compText, estadoCalculado, anioOp, mesOp, sectorVal, tipoIngresoVal, sectorEtiqueta, vendedorVal, valorCierreVal, comisionCalculadaUSD, esEmp, nombreEmprendimientoOficial, direccionIndividual, nombreMostrar, empData: emp, clientesDetalle };
+                return { ...op, propText, compText, estadoCalculado, anioOp, mesOp, sectorVal, tipoIngresoVal, sectorEtiqueta, vendedorVal, valorCierreVal, comisionCalculadaUSD, esEmp, nombreEmprendimientoOficial, direccionIndividual, nombreMostrar, empData: emp, clientesDetalle, comisionPropUSD, comisionCompUSD };
             });
 
             poblarAgentesCEO();
@@ -1053,7 +1063,7 @@
             const conteoSectoresMonto = {};
 
             if (operacionesFiltradas.length === 0) {
-                if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:15px; color:#64748b;">No hay operaciones que coincidan con la selección.</td></tr>`;
             } else {
                 let montoAcumulado = 0;
                 let comisionAcumuladaTotal = 0;
@@ -1125,7 +1135,7 @@
                                     }
                                     mapaTopCompradores[keyCliente].ops++;
                                     if (valorNum > 0) mapaTopCompradores[keyCliente].monto += valorNum;
-                                    if (comisionOpUSD > 0) mapaTopCompradores[keyCliente].comisionUSD += comisionOpUSD;
+                                    if (op.comisionCompUSD > 0) mapaTopCompradores[keyCliente].comisionUSD += op.comisionCompUSD;
 
                                     mapaTopCompradores[keyCliente].rolesMap[det.rol || 'Comprador'] = (mapaTopCompradores[keyCliente].rolesMap[det.rol || 'Comprador'] || 0) + 1;
 
@@ -1158,11 +1168,14 @@
                         }
                         mapaTopCompradores[keyCliente].ops++;
                         if (valorNum > 0) mapaTopCompradores[keyCliente].monto += valorNum;
-                        if (comisionOpUSD > 0) mapaTopCompradores[keyCliente].comisionUSD += comisionOpUSD;
+                        if (op.comisionCompUSD > 0) mapaTopCompradores[keyCliente].comisionUSD += op.comisionCompUSD;
                         mapaTopCompradores[keyCliente].rolesMap['Comprador/Inquilino']++;
                         mapaTopCompradores[keyCliente].proyectosMap[op.nombreMostrar] = (mapaTopCompradores[keyCliente].proyectosMap[op.nombreMostrar] || 0) + (valorNum > 0 ? valorNum : 1);
                     }
 
+                    const propFormateada = op.comisionPropUSD > 0 ? `$ ${Math.round(op.comisionPropUSD).toLocaleString('es-AR')}` : '-';
+                    const compFormateada = op.comisionCompUSD > 0 ? `$ ${Math.round(op.comisionCompUSD).toLocaleString('es-AR')}` : '-';
+                    
                     tr.innerHTML = `
                         <td><strong>${op['#'] || ''}</strong></td>
                         <td>${op['Fecha'] || ''}</td>
@@ -1170,7 +1183,9 @@
                         <td><strong>${op.nombreMostrar}</strong></td>
                         <td><span class="${op.valorCierreVal ? 'badge-monto' : ''}">${valorFormateado}</span></td>
                         <td><a href="#" onclick="filtrarDirectoInterviniente('${op.propText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.propText}</a></td>
+                        <td style="color:#047857; font-weight:700;">${propFormateada}</td>
                         <td><a href="#" onclick="filtrarDirectoInterviniente('${op.compText}'); return false;" style="color:var(--brand-blue); text-decoration:none; font-weight:600;">${op.compText}</a></td>
+                        <td style="color:#047857; font-weight:700;">${compFormateada}</td>
                         <td><span class="${comisionOpUSD > 0 ? 'badge-comision' : ''}">${comisionFormateada}</span></td>
                         <td><span class="badge ${badgeClass}">${op.estadoCalculado}</span></td>
                     `;
@@ -1189,6 +1204,8 @@
                         "Productor": op.empData?.productor || '-',
                         "Vendedor / Asesor": op.vendedorVal,
                         "Valor Cierre": op.valorCierreVal || '-',
+                        "Comisión Prop. USD": op.comisionPropUSD > 0 ? Math.round(op.comisionPropUSD) : 0,
+                        "Comisión Comp. USD": op.comisionCompUSD > 0 ? Math.round(op.comisionCompUSD) : 0,
                         "Comisión Total USD": comisionOpUSD > 0 ? Math.round(comisionOpUSD) : 0,
                         "Propietarios Nombre": op.propText,
                         "Propietario CUIT/DNI": propCuit.join(', ') || '-',
@@ -1239,7 +1256,7 @@
                 .slice(0, 10);
 
             if (listaTop.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:10px;">Sin intervinientes en esta selección.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#64748b; padding:10px;">Sin intervinientes en esta selección.</td></tr>`;
                 return;
             }
 
@@ -1377,7 +1394,7 @@
             });
 
             if (operacionesFiltradas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 15px; color: #64748b;">No se encontraron operaciones.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 15px; color: #64748b;">No se encontraron operaciones.</td></tr>`;
                 return;
             }
 
