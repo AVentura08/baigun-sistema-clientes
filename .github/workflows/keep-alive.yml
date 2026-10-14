@@ -1,13 +1,13 @@
-name: Mantener Supabase Activo (Múltiples Bases)
+name: Mantener Supabase y Streamlit Activos
 
 on:
   schedule:
-    # Se ejecuta automáticamente cada 3 días a las 12:00 UTC
+    # Se ejecuta automáticamente cada 3 días a las 12:00 UTC (09:00 ARG)
     - cron: '0 12 */3 * *'
   workflow_dispatch: # Permite probarlo manualmente cuando quieras
 
 jobs:
-  ping-supabase:
+  ping-servicios:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Proyecto 1 (Baigun Realty - Sistema Clientes)
@@ -36,4 +36,14 @@ jobs:
             echo "✅ Ping exitoso Proyecto 2."
           else
             echo "⚠️ Aviso Proyecto 2 devolvió código $HTTP_STATUS"
+          fi
+
+      - name: Ping Web Streamlit (Baigun Comisiones)
+        run: |
+          HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" "https://baigun-comisiones-bhzlbikgytwwwvkxcf6u2v.streamlit.app/")
+          echo "Respuesta HTTP Streamlit: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Ping exitoso Streamlit (App despierta y activa)."
+          else
+            echo "ℹ️ Solicitud enviada a Streamlit (Código $HTTP_STATUS - cuenta como tráfico de actividad)."
           fi
