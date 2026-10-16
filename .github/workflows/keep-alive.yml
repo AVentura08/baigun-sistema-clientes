@@ -1,10 +1,11 @@
 name: Mantener Supabase Activo (Múltiples Bases)
 
 on:
+  push:
+    branches: [ main ] # Se ejecuta automáticamente apenas guardes el archivo
   schedule:
-    # Se ejecuta automáticamente cada 3 días a las 12:00 UTC (09:00 ARG)
-    - cron: '0 12 */3 * *'
-  workflow_dispatch: # Permite probarlo manualmente cuando quieras
+    - cron: '0 12 */3 * *' # Y luego cada 3 días automáticamente
+  workflow_dispatch:
 
 jobs:
   ping-supabase:
